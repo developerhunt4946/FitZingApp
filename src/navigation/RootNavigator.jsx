@@ -5,12 +5,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import AuthStack from './AuthStack';
 import AppStack from './AppStack';
-import { restoreToken } from '../redux/actions/authActions';
+import { setUser, setToken } from '../redux/slices/authSlice';
 import { COLORS } from '../theme';
 
 const RootNavigator = () => {
   const dispatch = useDispatch();
-  const { token, user, isLoading } = useSelector((state) => state.auth);
+  const { token, user } = useSelector((state) => state.auth);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
 
   useEffect(() => {
@@ -26,7 +26,8 @@ const RootNavigator = () => {
       if (savedToken && savedUserData) {
         // Token and user data found, restore them
         const userData = JSON.parse(savedUserData);
-        dispatch(restoreToken(savedToken, userData));
+        dispatch(setToken(savedToken));
+        dispatch(setUser(userData));
       }
     } catch (e) {
       // Restoring token failed

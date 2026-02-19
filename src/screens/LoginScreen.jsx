@@ -12,13 +12,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {COLORS, FONTS, SPACING} from '../theme';
+import { useDispatch, useSelector } from 'react-redux';
+import { COLORS, FONTS, SPACING } from '../theme';
+import { login } from '../redux/slices/authSlice';
 
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector(state => state.auth);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -26,16 +29,11 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      setLoading(true);
-
-      // TODO: Replace with real API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      setLoading(false);
-      console.log('Login Success');
-    } catch (error) {
-      setLoading(false);
-      console.log('Login Error', error);
+      const result = await dispatch(login({ email, password })).unwrap();
+      console.log('Login Success', result);
+      // Navigation will happen in RootNavigator based on auth state
+    } catch (err) {
+      console.log('Login Error', err);
     }
   };
 
@@ -67,6 +65,13 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Form Section */}
           <View style={styles.formContainer}>
+
+            {/* Error Message */}
+            {error && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            )}
 
             {/* Email */}
             <View style={styles.inputWrapper}>
@@ -176,6 +181,18 @@ const styles = StyleSheet.create({
 
   formContainer: {
     marginBottom: SPACING['32'],
+  },
+
+  errorContainer: {
+    backgroundColor: '#FFE5E5',
+    borderRadius: 8,
+    padding: SPACING['12'],
+    marginBottom: SPACING['20'],
+  },
+
+  errorText: {
+    ...FONTS.body2,
+    color: '#D32F2F',
   },
 
   inputWrapper: {
