@@ -1,46 +1,56 @@
 const COLORS = {
-  // Primary Colors
-  primary: '#6366F1',
-  primaryLight: '#818CF8',
-  primaryDark: '#4F46E5',
+  // Primary - Bold Sport Blue (matching FZ logo)
+  primary: '#2B47D1',
+  primaryLight: '#4F6AE8',
+  primaryDark: '#1A32B0',
 
-  // Secondary Colors
-  secondary: '#EC4899',
-  secondaryLight: '#F472B6',
-  secondaryDark: '#DB2777',
+  // Secondary - Purple accent (logo gradient)
+  secondary: '#6B3FD4',
+  secondaryLight: '#8B63E8',
+  secondaryDark: '#4E2CAD',
+
+  // Accent - Sky Blue
+  accent: '#0EA5E9',
+  accentLight: '#38BDF8',
+
+  // Light theme backgrounds
+  background: '#F5F6FA',      // Soft off-white
+  surface: '#FFFFFF',         // Pure white cards
+  surfaceLight: '#EEF1FA',    // Tinted surface
 
   // Neutral Colors
   white: '#FFFFFF',
   black: '#000000',
-  gray50: '#F9FAFB',
-  gray100: '#F3F4F6',
-  gray200: '#E5E7EB',
-  gray300: '#D1D5DB',
-  gray400: '#9CA3AF',
-  gray500: '#6B7280',
-  gray600: '#4B5563',
-  gray700: '#374151',
-  gray800: '#1F2937',
-  gray900: '#111827',
+  gray50: '#F8FAFC',
+  gray100: '#F1F5F9',
+  gray200: '#E2E8F0',
+  gray300: '#CBD5E1',
+  gray400: '#94A3B8',
+  gray500: '#64748B',
+  gray600: '#475569',
+  gray700: '#334155',
+  gray800: '#1E293B',
+  gray900: '#0F172A',
 
   // Status Colors
-  success: '#10B981',
-  successLight: '#6EE7B7',
+  success: '#22C55E',
+  successLight: '#DCFCE7',
   warning: '#F59E0B',
-  warningLight: '#FCD34D',
+  warningLight: '#FEF3C7',
   error: '#EF4444',
-  errorLight: '#FCA5A5',
+  errorLight: '#FEE2E2',
   info: '#3B82F6',
-  infoLight: '#93C5FD',
+  infoLight: '#DBEAFE',
 
   // Semantic Colors
-  background: '#FFFFFF',
-  surface: '#F9FAFB',
-  border: '#E5E7EB',
-  text: '#111827',
-  textSecondary: '#6B7280',
-  textTertiary: '#9CA3AF',
-  disabled: '#D1D5DB',
+  border: '#E2E8F0',
+  borderLight: '#F1F5F9',
+  text: '#0F172A',
+  textSecondary: '#475569',
+  textTertiary: '#94A3B8',
+  disabled: '#CBD5E1',
+  inputBg: '#FFFFFF',
+  inputBgFocused: '#EEF2FF',
 };
 
 export default COLORS;

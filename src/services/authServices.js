@@ -1,27 +1,26 @@
 import authAPI from './api';
 
-// Simple login service
+// Login service
 export const login = async (email, password) => {
   try {
     const response = await authAPI.login(email, password);
-    console.log('Login response:', response.data); // Debugging log
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
   }
 };
 
-// Simple signup service
-export const signup = async (email, password, name) => {
+// Signup service — accepts full form payload
+export const signup = async (payload) => {
   try {
-    const response = await authAPI.signup(email, password, name);
+    const response = await authAPI.signup(payload);
     return response.data;
   } catch (error) {
     throw error.response?.data || error;
   }
 };
 
-// Simple logout service
+// Logout service
 export const logout = async () => {
   try {
     await authAPI.logout();

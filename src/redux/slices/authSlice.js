@@ -1,5 +1,26 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as loginService, signup as signupService } from '../../services/authServices';
+
+// Helper: persist auth data
+const persistAuth = async (token, user) => {
+  try {
+    await AsyncStorage.setItem('authToken', token);
+    await AsyncStorage.setItem('userData', JSON.stringify(user));
+  } catch (e) {
+    console.warn('Failed to persist auth:', e);
+  }
+};
+
+// Helper: clear auth data
+const clearAuth = async () => {
+  try {
+    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.removeItem('userData');
+  } catch (e) {
+    console.warn('Failed to clear auth:', e);
+  }
+};
 
 // Async thunks
 export const login = createAsyncThunk(
@@ -7,21 +28,33 @@ export const login = createAsyncThunk(
   async ({ email, password }, { rejectWithValue }) => {
     try {
       const data = await loginService(email, password);
-      return data;
+      // Persist token and user to AsyncStorage
+      const token = data?.token || data?.access_token || data?.accessToken;
+      const user = data?.user || data?.data || data;
+      if (token) {
+        await persistAuth(token, user);
+      }
+      return { token, user };
     } catch (error) {
-      return rejectWithValue(error.message || 'Login failed');
+      return rejectWithValue(error.message || 'Login failed. Please check your credentials.');
     }
   }
 );
 
 export const signup = createAsyncThunk(
   'auth/signup',
-  async ({ email, password, name }, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const data = await signupService(email, password, name);
-      return data;
+      const data = await signupService(payload);
+      // Persist token and user to AsyncStorage if server logs user in after signup
+      const token = data?.token || data?.access_token || data?.accessToken;
+      const user = data?.user || data?.data || data;
+      if (token) {
+        await persistAuth(token, user);
+      }
+      return { token, user };
     } catch (error) {
-      return rejectWithValue(error.message || 'Signup failed');
+      return rejectWithValue(error.message || 'Signup failed. Please try again.');
     }
   }
 );
@@ -35,9 +68,20 @@ const authSlice = createSlice({
     error: null,
   },
   reducers: {
+    // Used by RootNavigator to restore session from AsyncStorage
+    setToken: (state, action) => {
+      state.token = action.payload;
+    },
+    setUser: (state, action) => {
+      state.user = action.payload;
+    },
     logout: (state) => {
       state.user = null;
       state.token = null;
+      state.error = null;
+      clearAuth();
+    },
+    clearError: (state) => {
       state.error = null;
     },
   },
@@ -76,5 +120,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, setToken, setUser, clearError } = authSlice.actions;
 export default authSlice.reducer;

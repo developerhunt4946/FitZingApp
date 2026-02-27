@@ -1,17 +1,29 @@
-import React, { useState } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StatusBar,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONTS, SPACING } from '../theme';
+import { useDispatch, useSelector } from 'react-redux';
+import { COLORS, SPACING } from '../theme';
+import { signup, clearError } from '../redux/slices/authSlice';
+import { AppInput, AppButton, PasswordInput, DatePickerInput } from '../components';
+import {
+  User,
+  Phone,
+  Mail,
+  Shield,
+  UserPlus,
+  AlertCircle,
+  Zap,
+} from 'lucide-react-native';
 
 const SignUpScreen = ({ navigation }) => {
   const [form, setForm] = useState({
@@ -23,164 +35,258 @@ const SignUpScreen = ({ navigation }) => {
     mobile: '',
     dob: '',
   });
+  const [errors, setErrors] = useState({});
+  const [firstFocused, setFirstFocused] = useState(false);
+  const [lastFocused, setLastFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [mobileFocused, setMobileFocused] = useState(false);
+
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector(state => state.auth);
+
+  // Entry animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(40)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 55,
+        friction: 9,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    dispatch(clearError());
+  }, []);
 
   const handleChange = (key, value) => {
     setForm(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) {
+      setErrors(prev => ({ ...prev, [key]: null }));
+    }
   };
 
-  const handleSignup = () => {
-    console.log('Signup Data:', form);
+  const validate = () => {
+    const newErrors = {};
+    if (!form.firstName.trim()) newErrors.firstName = 'Required';
+    if (!form.lastName.trim()) newErrors.lastName = 'Required';
+    if (!form.email.trim()) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Enter a valid email';
+    if (!form.mobile.trim()) newErrors.mobile = 'Mobile is required';
+    else if (form.mobile.length < 10) newErrors.mobile = 'Enter valid mobile number';
+    if (!form.dob) newErrors.dob = 'Date of birth required';
+    if (!form.password) newErrors.password = 'Password is required';
+    else if (form.password.length < 6) newErrors.password = 'Min 6 characters';
+    if (!form.confirmPassword) newErrors.confirmPassword = 'Please confirm password';
+    else if (form.password !== form.confirmPassword) newErrors.confirmPassword = "Passwords don't match";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSignup = async () => {
+    if (!validate()) return;
+    try {
+      const payload = {
+        first_name: form.firstName.trim(),
+        last_name: form.lastName.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        mobile: form.mobile.trim(),
+        dob: form.dob,
+      };
+      await dispatch(signup(payload)).unwrap();
+    } catch (err) {
+      // error is already set in Redux state
+    }
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar
-        barStyle="dark-content"
-        backgroundColor={COLORS.background}
-      />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-
           {/* Header */}
-          <View style={styles.headerContainer}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>
-              Fill in the details to get started
-            </Text>
-          </View>
+          <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <View style={styles.logoRow}>
+              <View style={styles.logoCircle}>
+                <Zap size={22} color={COLORS.white} fill={COLORS.white} />
+              </View>
+              <Text style={styles.brandName}>FitZing</Text>
+            </View>
+            <Text style={styles.headerTitle}>Create Account</Text>
+            <Text style={styles.headerSubtitle}>Join the tournament community</Text>
+          </Animated.View>
 
-          {/* Form */}
-          <View style={styles.formContainer}>
+          {/* API Error Banner */}
+          {error ? (
+            <Animated.View style={[styles.errorBanner, { opacity: fadeAnim }]}>
+              <AlertCircle size={14} color="#EF4444" />
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </Animated.View>
+          ) : null}
 
-            {/* First & Last Name */}
+          {/* Personal Info Section */}
+          <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <View style={styles.sectionHeader}>
+              <User size={14} color={COLORS.primary} />
+              <Text style={styles.sectionTitle}>Personal Info</Text>
+            </View>
+
+            {/* First & Last Name Row */}
             <View style={styles.row}>
-              <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>First Name</Text>
-                <TextInput
+              <View style={{ flex: 1 }}>
+                <AppInput
+                  label="First Name"
                   value={form.firstName}
-                  onChangeText={(v) => handleChange('firstName', v)}
-                  placeholder="First name"
-                  placeholderTextColor={COLORS.textTertiary}
-                  style={styles.input}
+                  onChangeText={v => handleChange('firstName', v)}
+                  placeholder="First"
+                  leftIcon={
+                    <View style={{ opacity: firstFocused ? 1 : 0.4 }}>
+                      <User size={16} color={firstFocused ? COLORS.primary : COLORS.textSecondary} />
+                    </View>
+                  }
+                  error={errors.firstName}
+                  autoCapitalize="words"
+                  onFocus={() => setFirstFocused(true)}
+                  onBlur={() => setFirstFocused(false)}
                 />
               </View>
-
-              <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>Last Name</Text>
-                <TextInput
+              <View style={{ width: 10 }} />
+              <View style={{ flex: 1 }}>
+                <AppInput
+                  label="Last Name"
                   value={form.lastName}
-                  onChangeText={(v) => handleChange('lastName', v)}
-                  placeholder="Last name"
-                  placeholderTextColor={COLORS.textTertiary}
-                  style={styles.input}
+                  onChangeText={v => handleChange('lastName', v)}
+                  placeholder="Last"
+                  leftIcon={
+                    <View style={{ opacity: lastFocused ? 1 : 0.4 }}>
+                      <User size={16} color={lastFocused ? COLORS.primary : COLORS.textSecondary} />
+                    </View>
+                  }
+                  error={errors.lastName}
+                  autoCapitalize="words"
+                  onFocus={() => setLastFocused(true)}
+                  onBlur={() => setLastFocused(false)}
                 />
               </View>
             </View>
-             {/* Mobile & DOB */}
-            <View style={styles.row}>
-              <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>Mobile</Text>
-                <TextInput
-                  value={form.mobile}
-                  onChangeText={(v) => handleChange('mobile', v)}
-                  placeholder="Mobile number"
-                  keyboardType="phone-pad"
-                  placeholderTextColor={COLORS.textTertiary}
-                  style={styles.input}
-                />
-              </View>
+          </Animated.View>
 
-              <View style={styles.halfInput}>
-                <Text style={styles.inputLabel}>DOB</Text>
-                <TextInput
-                  value={form.dob}
-                  onChangeText={(v) => handleChange('dob', v)}
-                  placeholder="DD/MM/YYYY"
-                  placeholderTextColor={COLORS.textTertiary}
-                  style={styles.input}
-                />
-              </View>
+          {/* Contact Section */}
+          <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <View style={styles.sectionHeader}>
+              <Phone size={14} color={COLORS.secondary} />
+              <Text style={styles.sectionTitle}>Contact Details</Text>
             </View>
 
-            {/* Email */}
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Email</Text>
-              <TextInput
-                value={form.email}
-                onChangeText={(v) => handleChange('email', v)}
-                placeholder="Enter your email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                placeholderTextColor={COLORS.textTertiary}
-                style={styles.input}
-              />
+            <AppInput
+              label="Email Address"
+              value={form.email}
+              onChangeText={v => handleChange('email', v)}
+              placeholder="your@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              leftIcon={
+                <View style={{ opacity: emailFocused ? 1 : 0.4 }}>
+                  <Mail size={16} color={emailFocused ? COLORS.primary : COLORS.textSecondary} />
+                </View>
+              }
+              error={errors.email}
+              onFocus={() => setEmailFocused(true)}
+              onBlur={() => setEmailFocused(false)}
+            />
+
+            <AppInput
+              label="Mobile Number"
+              value={form.mobile}
+              onChangeText={v => handleChange('mobile', v)}
+              placeholder="+91 XXXXX XXXXX"
+              keyboardType="phone-pad"
+              leftIcon={
+                <View style={{ opacity: mobileFocused ? 1 : 0.4 }}>
+                  <Phone size={16} color={mobileFocused ? COLORS.primary : COLORS.textSecondary} />
+                </View>
+              }
+              error={errors.mobile}
+              onFocus={() => setMobileFocused(true)}
+              onBlur={() => setMobileFocused(false)}
+            />
+
+            <DatePickerInput
+              label="Date of Birth"
+              value={form.dob}
+              onChange={v => handleChange('dob', v)}
+              error={errors.dob}
+              maxYear={new Date().getFullYear() - 13}
+            />
+          </Animated.View>
+
+          {/* Security Section */}
+          <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+            <View style={styles.sectionHeader}>
+              <Shield size={14} color={COLORS.accent} />
+              <Text style={styles.sectionTitle}>Security</Text>
             </View>
-            
 
-            {/* Password */}
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Password</Text>
-              <TextInput
-                value={form.password}
-                onChangeText={(v) => handleChange('password', v)}
-                placeholder="Enter password"
-                secureTextEntry
-                placeholderTextColor={COLORS.textTertiary}
-                style={styles.input}
-              />
+            <PasswordInput
+              label="Password"
+              value={form.password}
+              onChangeText={v => handleChange('password', v)}
+              placeholder="Min. 6 characters"
+              error={errors.password}
+            />
+
+            <PasswordInput
+              label="Confirm Password"
+              value={form.confirmPassword}
+              onChangeText={v => handleChange('confirmPassword', v)}
+              placeholder="Re-enter your password"
+              error={errors.confirmPassword}
+            />
+
+            {/* Terms */}
+            <View style={styles.termsRow}>
+              <Text style={styles.termsText}>By creating an account, you agree to our </Text>
+              <TouchableOpacity activeOpacity={0.7}>
+                <Text style={styles.termsLink}>Terms & Privacy Policy</Text>
+              </TouchableOpacity>
             </View>
 
-            {/* Confirm Password */}
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputLabel}>Confirm Password</Text>
-              <TextInput
-                value={form.confirmPassword}
-                onChangeText={(v) => handleChange('confirmPassword', v)}
-                placeholder="Confirm password"
-                secureTextEntry
-                placeholderTextColor={COLORS.textTertiary}
-                style={styles.input}
-              />
-            </View>
-
-           
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={styles.signupButton}
-              activeOpacity={0.8}
+            {/* Submit */}
+            <AppButton
+              title="Create Account"
               onPress={handleSignup}
-            >
-              <Text style={styles.signupButtonText}>
-                Create Account
-              </Text>
-            </TouchableOpacity>
-
-          </View>
+              loading={loading}
+              icon={<UserPlus size={16} color={COLORS.white} />}
+            />
+          </Animated.View>
 
           {/* Footer */}
-          <View style={styles.footerContainer}>
-            <Text style={styles.footerText}>
-              Already have an account?
-            </Text>
+          <Animated.View style={[styles.footerContainer, { opacity: fadeAnim }]}>
+            <Text style={styles.footerText}>Already have an account? </Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('Login')}
+              activeOpacity={0.7}
             >
-              <Text style={styles.loginText}>
-                Login
-              </Text>
+              <Text style={styles.loginLink}>Sign In</Text>
             </TouchableOpacity>
-          </View>
-
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -192,96 +298,143 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
   scrollContainer: {
     flexGrow: 1,
-    paddingHorizontal: SPACING['24'],
-    paddingTop: SPACING['40'],
-    paddingBottom: SPACING['40'],
-  },
-
-  headerContainer: {
-    marginBottom: SPACING['32'],
-  },
-
-  title: {
-    ...FONTS.heading2,
-    color: COLORS.text,
-    marginBottom: SPACING['8'],
-  },
-
-  subtitle: {
-    ...FONTS.body1,
-    color: COLORS.textSecondary,
-  },
-
-  formContainer: {
-    marginBottom: SPACING['32'],
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: SPACING['16'],
-    marginBottom: SPACING['20'],
-  },
-
-  halfInput: {
-    flex: 1,
-  },
-
-  inputWrapper: {
-    marginBottom: SPACING['20'],
-  },
-
-  inputLabel: {
-    ...FONTS.body2,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING['6'],
-  },
-
-  input: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
     paddingHorizontal: SPACING['16'],
-    backgroundColor: COLORS.surface,
-    color: COLORS.text,
-    ...FONTS.body1,
+    paddingTop: SPACING['20'],
+    paddingBottom: SPACING['32'],
   },
 
-  signupButton: {
-    height: 52,
+  // Header
+  header: {
+    marginBottom: SPACING['16'],
+    paddingHorizontal: 4,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  logoCircle: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: SPACING['8'],
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  brandName: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.text,
+    letterSpacing: 0.5,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
   },
 
-  signupButtonText: {
-    ...FONTS.button,
-    color: COLORS.white,
+  // API Error
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(239,68,68,0.12)',
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.25)',
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#EF4444',
+    fontWeight: '500',
   },
 
+  // Cards
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: SPACING['16'],
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: SPACING['12'],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+
+  // Section Headers
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: SPACING['12'],
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+
+  // Terms
+  termsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    marginBottom: SPACING['14'],
+    marginTop: 4,
+  },
+  termsText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    lineHeight: 16,
+  },
+  termsLink: {
+    fontSize: 11,
+    color: COLORS.primary,
+    fontWeight: '600',
+    lineHeight: 16,
+  },
+
+  // Footer
   footerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: SPACING['24'],
+    marginTop: 4,
   },
-
   footerText: {
-    ...FONTS.body2,
+    fontSize: 13,
     color: COLORS.textSecondary,
-    marginRight: SPACING['6'],
   },
-
-  loginText: {
-    ...FONTS.body2,
+  loginLink: {
+    fontSize: 13,
     color: COLORS.primary,
-    fontWeight: FONTS.weights.semibold,
+    fontWeight: '700',
   },
 });
 
