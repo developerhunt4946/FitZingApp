@@ -15,6 +15,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, SPACING } from '../theme';
 import { signup, clearError } from '../redux/slices/authSlice';
 import { AppInput, AppButton, PasswordInput, DatePickerInput } from '../components';
+import STRINGS from '../constants/strings';
+import SCREEN_NAMES from '../constants/screenNames';
 import {
   User,
   Phone,
@@ -126,10 +128,10 @@ const SignUpScreen = ({ navigation }) => {
               <View style={styles.logoCircle}>
                 <Zap size={22} color={COLORS.white} fill={COLORS.white} />
               </View>
-              <Text style={styles.brandName}>FitZing</Text>
+              <Text style={styles.brandName}>{STRINGS.APP_NAME}</Text>
             </View>
-            <Text style={styles.headerTitle}>Create Account</Text>
-            <Text style={styles.headerSubtitle}>Join the tournament community</Text>
+            <Text style={styles.headerTitle}>{STRINGS.SIGNUP_TITLE}</Text>
+            <Text style={styles.headerSubtitle}>{STRINGS.SIGNUP_SUBTITLE}</Text>
           </Animated.View>
 
           {/* API Error Banner */}
@@ -151,7 +153,7 @@ const SignUpScreen = ({ navigation }) => {
             <View style={styles.row}>
               <View style={{ flex: 1 }}>
                 <AppInput
-                  label="First Name"
+                  label={STRINGS.FIRST_NAME}
                   value={form.firstName}
                   onChangeText={v => handleChange('firstName', v)}
                   placeholder="First"
@@ -169,7 +171,7 @@ const SignUpScreen = ({ navigation }) => {
               <View style={{ width: 10 }} />
               <View style={{ flex: 1 }}>
                 <AppInput
-                  label="Last Name"
+                  label={STRINGS.LAST_NAME}
                   value={form.lastName}
                   onChangeText={v => handleChange('lastName', v)}
                   placeholder="Last"
@@ -195,7 +197,7 @@ const SignUpScreen = ({ navigation }) => {
             </View>
 
             <AppInput
-              label="Email Address"
+              label={STRINGS.EMAIL}
               value={form.email}
               onChangeText={v => handleChange('email', v)}
               placeholder="your@email.com"
@@ -213,7 +215,7 @@ const SignUpScreen = ({ navigation }) => {
             />
 
             <AppInput
-              label="Mobile Number"
+              label={STRINGS.MOBILE}
               value={form.mobile}
               onChangeText={v => handleChange('mobile', v)}
               placeholder="+91 XXXXX XXXXX"
@@ -229,7 +231,7 @@ const SignUpScreen = ({ navigation }) => {
             />
 
             <DatePickerInput
-              label="Date of Birth"
+              label={STRINGS.BIRTH_DATE}
               value={form.dob}
               onChange={v => handleChange('dob', v)}
               error={errors.dob}
@@ -245,7 +247,7 @@ const SignUpScreen = ({ navigation }) => {
             </View>
 
             <PasswordInput
-              label="Password"
+              label={STRINGS.PASSWORD}
               value={form.password}
               onChangeText={v => handleChange('password', v)}
               placeholder="Min. 6 characters"
@@ -270,7 +272,7 @@ const SignUpScreen = ({ navigation }) => {
 
             {/* Submit */}
             <AppButton
-              title="Create Account"
+              title={STRINGS.REGISTER}
               onPress={handleSignup}
               loading={loading}
               icon={<UserPlus size={16} color={COLORS.white} />}
@@ -279,12 +281,12 @@ const SignUpScreen = ({ navigation }) => {
 
           {/* Footer */}
           <Animated.View style={[styles.footerContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.footerText}>Already have an account? </Text>
+            <Text style={styles.footerText}>{STRINGS.ALREADY_HAVE_ACCOUNT}</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('Login')}
+              onPress={() => navigation.navigate(SCREEN_NAMES.LOGIN)}
               activeOpacity={0.7}
             >
-              <Text style={styles.loginLink}>Sign In</Text>
+              <Text style={styles.loginLink}>{STRINGS.LOGIN}</Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>

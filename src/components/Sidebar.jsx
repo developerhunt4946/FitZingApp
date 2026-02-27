@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { COLORS, SPACING, FONTS } from '../theme';
+import STRINGS from '../constants/strings';
 import {
     X,
     Calendar,
@@ -32,13 +33,13 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
 
 const MENU_ITEMS = [
-    { icon: Calendar, label: 'My Events', color: COLORS.primary },
-    { icon: Bell, label: 'Notifications', color: '#F59E0B' },
-    { icon: Trophy, label: 'My Achievements', color: '#22C55E' },
-    { icon: Users, label: 'Refer a Friend', color: '#A855F7' },
-    { icon: Gift, label: 'Rewards & Offers', color: '#EF4444' },
-    { icon: Settings, label: 'Settings', color: COLORS.textSecondary },
-    { icon: HelpCircle, label: 'Help & Support', color: COLORS.textSecondary },
+    { icon: Calendar, label: STRINGS.MY_EVENTS, color: COLORS.primary },
+    { icon: Bell, label: STRINGS.NOTIFICATIONS, color: '#F59E0B' },
+    { icon: Trophy, label: STRINGS.MY_ACHIEVEMENTS, color: '#22C55E' },
+    { icon: Users, label: STRINGS.REFER_FRIEND, color: '#A855F7' },
+    { icon: Gift, label: STRINGS.REWARDS_OFFERS, color: '#EF4444' },
+    { icon: Settings, label: STRINGS.SETTINGS, color: COLORS.textSecondary },
+    { icon: HelpCircle, label: STRINGS.HELP_SUPPORT, color: COLORS.textSecondary },
 ];
 
 const Sidebar = ({ visible, onClose }) => {
@@ -131,7 +132,7 @@ const Sidebar = ({ visible, onClose }) => {
                             <Text style={styles.profileEmail} numberOfLines={1}>{email}</Text>
                             <View style={styles.badgeRow}>
                                 <Trophy size={11} color={COLORS.primary} />
-                                <Text style={styles.badgeText}>Active Athlete</Text>
+                                <Text style={styles.badgeText}>{STRINGS.ATHLETE_BADGE}</Text>
                             </View>
                         </View>
                     </View>
@@ -165,7 +166,7 @@ const Sidebar = ({ visible, onClose }) => {
                         <View style={styles.divider} />
                         <TouchableOpacity style={styles.logoutRow} onPress={handleLogout} activeOpacity={0.7}>
                             <LogOut size={16} color={COLORS.error} />
-                            <Text style={styles.logoutText}>Logout</Text>
+                            <Text style={styles.logoutText}>{STRINGS.LOGOUT}</Text>
                         </TouchableOpacity>
                     </View>
                 </SafeAreaView>

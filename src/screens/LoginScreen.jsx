@@ -15,6 +15,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, SPACING } from '../theme';
 import { login, clearError } from '../redux/slices/authSlice';
 import { AppInput, PasswordInput, AppButton } from '../components';
+import STRINGS from '../constants/strings';
+import SCREEN_NAMES from '../constants/screenNames';
 import {
   Mail,
   Trophy,
@@ -85,7 +87,7 @@ const LoginScreen = ({ navigation }) => {
               </View>
               <View style={styles.logoAccent} />
             </View>
-            <Text style={styles.brandName}>FitZing</Text>
+            <Text style={styles.brandName}>{STRINGS.APP_NAME}</Text>
             <Text style={styles.brandTagline}>Sports Tournament Platform</Text>
 
             {/* Sport Icons Row */}
@@ -100,8 +102,8 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Card */}
           <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
-            <Text style={styles.cardTitle}>Welcome Back</Text>
-            <Text style={styles.cardSubtitle}>Sign in to your account</Text>
+            <Text style={styles.cardTitle}>{STRINGS.WELCOME}</Text>
+            <Text style={styles.cardSubtitle}>{STRINGS.LOGIN_SUBTITLE}</Text>
 
             {/* Error Banner */}
             {error ? (
@@ -113,7 +115,7 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Email */}
             <AppInput
-              label="Email Address"
+              label={STRINGS.EMAIL}
               value={email}
               onChangeText={setEmail}
               placeholder="your@email.com"
@@ -131,7 +133,7 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Password */}
             <PasswordInput
-              label="Password"
+              label={STRINGS.PASSWORD}
               value={password}
               onChangeText={setPassword}
               placeholder="Enter your password"
@@ -139,12 +141,12 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Forgot Password */}
             <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
-              <Text style={styles.forgotText}>Forgot Password?</Text>
+              <Text style={styles.forgotText}>{STRINGS.FORGOT_PASSWORD}</Text>
             </TouchableOpacity>
 
             {/* Login Button */}
             <AppButton
-              title="Sign In"
+              title={STRINGS.LOGIN}
               onPress={handleLogin}
               loading={loading}
               disabled={!isFormValid}
@@ -167,12 +169,12 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Footer */}
           <Animated.View style={[styles.footerContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
+            <Text style={styles.footerText}>{STRINGS.DONT_HAVE_ACCOUNT}</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('SignUp')}
+              onPress={() => navigation.navigate(SCREEN_NAMES.SIGN_UP)}
               activeOpacity={0.7}
             >
-              <Text style={styles.signupLink}>Create Account</Text>
+              <Text style={styles.signupLink}>{STRINGS.SIGN_UP}</Text>
             </TouchableOpacity>
           </Animated.View>
         </ScrollView>

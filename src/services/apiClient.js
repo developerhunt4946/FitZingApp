@@ -23,13 +23,13 @@ apiClient.interceptors.request.use(
       console.error('Error retrieving token:', error);
     }
 
-    // 🔍 DEBUG: log full request URL, method, and body
-    const fullURL = (config.baseURL || '') + (config.url || '');
-    console.log('=== API REQUEST ===');
-    console.log('URL    :', fullURL);
-    console.log('Method :', config.method?.toUpperCase());
-    console.log('Body   :', JSON.stringify(config.data));
-    console.log('==================');
+    // // 🔍 DEBUG: log full request URL, method, and body
+    // const fullURL = (config.baseURL || '') + (config.url || '');
+    // console.log('=== API REQUEST ===');
+    // console.log('URL    :', fullURL);
+    // console.log('Method :', config.method?.toUpperCase());
+    // console.log('Body   :', JSON.stringify(config.data));
+    // console.log('==================');
 
     return config;
   },

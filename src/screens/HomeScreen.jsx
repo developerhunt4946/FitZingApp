@@ -12,10 +12,12 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { COLORS, SPACING, FONTS } from '../theme';
-import { Sidebar } from '../components';
+import { Sidebar, TournamentList } from '../components';
 import { Bell, User, Trophy, Zap, ChevronRight } from 'lucide-react-native';
+import { fetchTournaments } from '../redux/slices/tournamentSlice';
+import STRINGS from '../constants/strings';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -46,9 +48,9 @@ const BANNERS = [
 
 // ─── Quick Stats ──────────────────────────────────────────────────
 const QUICK_STATS = [
-  { label: 'Events Joined', value: '12', icon: Trophy, color: '#2B47D1' },
-  { label: 'Wins', value: '7', icon: Zap, color: '#22C55E' },
-  { label: 'Upcoming', value: '3', icon: null, color: '#F59E0B' },
+  { label: STRINGS.EVENTS_JOINED, value: '12', icon: Trophy, color: '#2B47D1' },
+  { label: STRINGS.WINS, value: '7', icon: Zap, color: '#22C55E' },
+  { label: STRINGS.UPCOMING, value: '3', icon: null, color: '#F59E0B' },
 ];
 
 // ─── Banner Item ──────────────────────────────────────────────────
@@ -69,7 +71,9 @@ const BannerItem = ({ item }) => (
 
 // ─── Home Screen ──────────────────────────────────────────────────
 const HomeScreen = () => {
+  const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
+  const { tournaments, loading, error } = useSelector(state => state.tournament);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
 
@@ -79,13 +83,14 @@ const HomeScreen = () => {
 
   const firstName = user?.first_name || user?.firstName || user?.name || 'Athlete';
 
-  // Entry fade
+  // Entry fade + fetch tournaments
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 400,
       useNativeDriver: true,
     }).start();
+    dispatch(fetchTournaments());
   }, []);
 
   // Auto-scroll banner every 3s
@@ -140,7 +145,7 @@ const HomeScreen = () => {
 
             {/* Center: Welcome text */}
             <View style={styles.headerCenter}>
-              <Text style={styles.welcomeText}>Welcome back,</Text>
+              <Text style={styles.welcomeText}>{STRINGS.WELCOME_BACK}</Text>
               <Text style={styles.userName} numberOfLines={1}>{firstName} 👋</Text>
             </View>
 
@@ -202,12 +207,29 @@ const HomeScreen = () => {
             })}
           </View>
 
-          {/* ── Upcoming Events Placeholder ─────────────── */}
+          {/* ── All Tournaments ───────────────────────────── */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Events</Text>
+            <Text style={styles.sectionTitle}>{STRINGS.EXCLUSIVE_TOURNAMENTS}</Text>
             <TouchableOpacity activeOpacity={0.7}>
               <View style={styles.seeAllRow}>
-                <Text style={styles.seeAll}>See all</Text>
+                <Text style={styles.seeAll}>{STRINGS.VIEW_ALL}</Text>
+                <ChevronRight size={14} color={COLORS.primary} />
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <TournamentList
+            tournaments={tournaments}
+            loading={loading}
+            error={error}
+          />
+
+          {/* ── Upcoming Events Placeholder ─────────────── */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{STRINGS.UPCOMING_EVENTS}</Text>
+            <TouchableOpacity activeOpacity={0.7}>
+              <View style={styles.seeAllRow}>
+                <Text style={styles.seeAll}>{STRINGS.VIEW_ALL}</Text>
                 <ChevronRight size={14} color={COLORS.primary} />
               </View>
             </TouchableOpacity>
