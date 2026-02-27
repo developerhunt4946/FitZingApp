@@ -11,7 +11,7 @@ const apiClient = axios.create({
   },
 });
 
-// Request Interceptor - Add token to every request
+// Request Interceptor - Add token + log full URL
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -22,6 +22,15 @@ apiClient.interceptors.request.use(
     } catch (error) {
       console.error('Error retrieving token:', error);
     }
+
+    // 🔍 DEBUG: log full request URL, method, and body
+    const fullURL = (config.baseURL || '') + (config.url || '');
+    console.log('=== API REQUEST ===');
+    console.log('URL    :', fullURL);
+    console.log('Method :', config.method?.toUpperCase());
+    console.log('Body   :', JSON.stringify(config.data));
+    console.log('==================');
+
     return config;
   },
   (error) => {
@@ -33,11 +42,16 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // 🔍 DEBUG: log what the server replied with
+    console.log('=== API ERROR ===');
+    console.log('Status :', error.response?.status);
+    console.log('Data   :', JSON.stringify(error.response?.data));
+    console.log('=================');
+
     // Handle 401 Unauthorized - Token expired
     if (error.response?.status === 401) {
       AsyncStorage.removeItem('authToken');
       AsyncStorage.removeItem('userData');
-      // You can trigger logout action here if needed
     }
     return Promise.reject(error);
   },

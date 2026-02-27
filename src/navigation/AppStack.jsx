@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeScreen } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
 import { Home, User, Settings } from 'lucide-react-native';
@@ -42,52 +43,56 @@ const SettingsStack = () => (
 );
 
 // App Stack with Bottom Tab Navigation
-const AppStack = () => (
-  <Tab.Navigator
-    screenOptions={{
-      headerShown: false,
-      tabBarStyle: {
-        backgroundColor: COLORS.surface,
-        borderTopColor: COLORS.border,
-        borderTopWidth: 1,
-        height: 60,
-        paddingBottom: 8,
-        paddingTop: 8,
-      },
-      tabBarActiveTintColor: COLORS.primary,
-      tabBarInactiveTintColor: COLORS.textTertiary,
-      tabBarLabelStyle: {
-        fontSize: FONTS.xs,
-        fontWeight: '600',
-        marginTop: 2,
-      },
-    }}
-  >
-    <Tab.Screen
-      name="HomeStack"
-      component={HomeStack}
-      options={{
-        title: 'Home',
-        tabBarIcon: ({ color, size }) => <Home size={22} color={color} />,
+const AppStack = () => {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: COLORS.surface,
+          borderTopColor: COLORS.border,
+          borderTopWidth: 1,
+          height: 56 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+        },
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textTertiary,
+        tabBarLabelStyle: {
+          fontSize: FONTS.xs,
+          fontWeight: '600',
+          marginTop: 2,
+        },
       }}
-    />
-    <Tab.Screen
-      name="ProfileStack"
-      component={ProfileStack}
-      options={{
-        title: 'Profile',
-        tabBarIcon: ({ color, size }) => <User size={22} color={color} />,
-      }}
-    />
-    <Tab.Screen
-      name="SettingsStack"
-      component={SettingsStack}
-      options={{
-        title: 'Settings',
-        tabBarIcon: ({ color, size }) => <Settings size={22} color={color} />,
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Tab.Screen
+        name="HomeStack"
+        component={HomeStack}
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Home size={22} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="ProfileStack"
+        component={ProfileStack}
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => <User size={22} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="SettingsStack"
+        component={SettingsStack}
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <Settings size={22} color={color} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 export default AppStack;

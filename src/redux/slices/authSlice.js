@@ -29,8 +29,8 @@ export const login = createAsyncThunk(
     try {
       const data = await loginService(email, password);
       // Persist token and user to AsyncStorage
-      const token = data?.token || data?.access_token || data?.accessToken;
-      const user = data?.user || data?.data || data;
+      const token = data?.data?.tokens?.accessToken;
+      const user = data?.data?.user;
       if (token) {
         await persistAuth(token, user);
       }
@@ -46,9 +46,8 @@ export const signup = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const data = await signupService(payload);
-      // Persist token and user to AsyncStorage if server logs user in after signup
-      const token = data?.token || data?.access_token || data?.accessToken;
-      const user = data?.user || data?.data || data;
+      const token = data?.data?.tokens?.accessToken;
+      const user = data?.data?.user;
       if (token) {
         await persistAuth(token, user);
       }
