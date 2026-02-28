@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { getAllTournaments } from '../../services/tournamentServices';
+import { getAllTournaments, createTournament as createTournamentService } from '../../services/tournamentServices';
 
 export const fetchTournaments = createAsyncThunk(
     'tournament/fetchAll',
@@ -10,6 +10,20 @@ export const fetchTournaments = createAsyncThunk(
         } catch (error) {
             return rejectWithValue(
                 error?.message || 'Failed to fetch tournaments'
+            );
+        }
+    }
+);
+
+export const createTournament = createAsyncThunk(
+    'tournament/create',
+    async (payload, { rejectWithValue }) => {
+        try {
+            const data = await createTournamentService(payload);
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(
+                error?.message || 'Failed to create tournament'
             );
         }
     }
@@ -38,6 +52,19 @@ const tournamentSlice = createSlice({
                 state.tournaments = action.payload;
             })
             .addCase(fetchTournaments.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // Create Tournament
+            .addCase(createTournament.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createTournament.fulfilled, (state, action) => {
+                state.loading = false;
+                state.tournaments = [action.payload, ...state.tournaments];
+            })
+            .addCase(createTournament.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             });

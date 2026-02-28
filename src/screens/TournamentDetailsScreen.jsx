@@ -72,7 +72,7 @@ const TournamentDetailsScreen = ({ route }) => {
             <ScrollView bounces={false} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                 {/* Banner Section */}
                 <View style={styles.bannerContainer}>
-                    <Image source={{ uri: dummyBanner }} style={styles.bannerImage} />
+                    <Image source={{ uri: tournament?.imageURL }} style={styles.bannerImage} />
                     <View style={styles.bannerOverlay} />
 
                     {/* Header Actions */}

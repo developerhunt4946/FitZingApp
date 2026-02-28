@@ -92,7 +92,7 @@ const LoginScreen = ({ navigation }) => {
 
             {/* Sport Icons Row */}
             <View style={styles.sportBadges}>
-              {['🏏', '🏸', '⚽', '🏀', '🎾'].map((sport, i) => (
+              {['🏏', '🏸', '⚽', '🏐', '🏓'].map((sport, i) => (
                 <View key={i} style={styles.sportBadge}>
                   <Text style={styles.sportEmoji}>{sport}</Text>
                 </View>

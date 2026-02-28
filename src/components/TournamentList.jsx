@@ -37,7 +37,7 @@ const TournamentCard = ({ item }) => {
         >
             <View style={styles.imageContainer}>
                 <Image
-                    source={{ uri: dummyImage }}
+                    source={{ uri: item.imageURL }}
                     style={styles.image}
                     resizeMode="cover"
                 />
