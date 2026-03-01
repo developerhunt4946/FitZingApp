@@ -64,15 +64,15 @@ export const updateProfile = createAsyncThunk(
   async (payload, { rejectWithValue }) => {
     try {
       const data = await updateProfileService(payload);
-      // The API might return the user object directly in data or data.user or data.data
-      const updatedUser = data?.data || data?.user || data;
+      // The API response might have the user object in 'data', 'user', or root
+      const updatedUser = data?.data || data?.user || (data?.message ? data?.data || data?.user : data);
 
-      if (updatedUser) {
+      if (updatedUser && typeof updatedUser === 'object') {
         const token = await AsyncStorage.getItem('authToken');
         await persistAuth(token, updatedUser);
         return updatedUser;
       }
-      return rejectWithValue('Invalid response from server');
+      return rejectWithValue('Could not retrieve updated user details');
     } catch (error) {
       return rejectWithValue(error.message || 'Update failed. Please try again.');
     }
@@ -146,8 +146,14 @@ const authSlice = createSlice({
       })
       .addCase(updateProfile.fulfilled, (state, action) => {
         state.loading = false;
-        // Merge updated fields into the existing user object to preserve other fields like email/ids
-        state.user = { ...state.user, ...action.payload };
+        const updatedFields = action.payload;
+        // Ensure both camelCase and snake_case names are updated for consistency in the UI
+        if (updatedFields.firstName) updatedFields.first_name = updatedFields.firstName;
+        if (updatedFields.lastName) updatedFields.last_name = updatedFields.lastName;
+        if (updatedFields.first_name) updatedFields.firstName = updatedFields.first_name;
+        if (updatedFields.last_name) updatedFields.lastName = updatedFields.last_name;
+
+        state.user = { ...state.user, ...updatedFields };
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;

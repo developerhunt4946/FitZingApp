@@ -35,18 +35,31 @@ const DatePickerInput = ({
     const [open, setOpen] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
 
-    // Parse 'dd/mm/yyyy' -> Date object, or default to Jan 1, 2000
+    // Parse 'YYYY-MM-DD' or 'dd/mm/yyyy' -> Date object
     const parseToDate = () => {
-        if (value && value.length === 10) {
+        if (!value) return new Date(2000, 0, 1);
+        if (value.includes('-')) {
+            const [y, m, d] = value.split('-').map(Number);
+            if (y && m && d) return new Date(y, m - 1, d);
+        }
+        if (value.includes('/')) {
             const [d, m, y] = value.split('/').map(Number);
             if (d && m && y) return new Date(y, m - 1, d);
         }
         return new Date(2000, 0, 1);
     };
 
-    const maxDate = new Date(maxYear, 11, 31);
+    // User-friendly display 'DD / MM / YYYY'
+    const getDisplayValue = () => {
+        if (!value) return 'DD / MM / YYYY';
+        if (value.includes('-')) {
+            const [y, m, d] = value.split('-');
+            return `${d} / ${m} / ${y}`;
+        }
+        return value;
+    };
 
-    const displayValue = value || 'DD / MM / YYYY';
+    const maxDate = new Date(maxYear, 11, 31);
 
     return (
         <View style={styles.wrapper}>
@@ -80,7 +93,7 @@ const DatePickerInput = ({
                     />
                 </View>
                 <Text style={[styles.valueText, !value && styles.placeholderText]}>
-                    {displayValue}
+                    {getDisplayValue()}
                 </Text>
                 <View style={styles.rightIcon}>
                     <ChevronRight size={16} color={COLORS.textTertiary} />
@@ -100,7 +113,7 @@ const DatePickerInput = ({
                 onConfirm={(date) => {
                     setOpen(false);
                     setIsFocused(false);
-                    const formatted = `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+                    const formatted = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
                     onChange && onChange(formatted);
                 }}
                 onCancel={() => {

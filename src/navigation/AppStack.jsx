@@ -141,7 +141,7 @@ const AppStack = () => {
           options={{
             tabBarLabel: () => null,
             tabBarButton: (props) => <CustomTabBarButton {...props} isProminent />,
-            tabBarIcon: ({ color }) => <Plus size={28} color={COLORS.white} />,
+            tabBarIcon: ({ color }) => <User size={28} color={COLORS.white} />,
           }}
         />
       )}

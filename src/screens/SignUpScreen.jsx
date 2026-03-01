@@ -9,6 +9,7 @@ import {
   Platform,
   StyleSheet,
   Animated,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -35,7 +36,7 @@ const SignUpScreen = ({ navigation }) => {
     password: '',
     confirmPassword: '',
     mobile: '',
-    dob: '',
+    dateOfBirth: '',
   });
   const [errors, setErrors] = useState({});
   const [firstFocused, setFirstFocused] = useState(false);
@@ -82,7 +83,7 @@ const SignUpScreen = ({ navigation }) => {
     else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = 'Enter a valid email';
     if (!form.mobile.trim()) newErrors.mobile = 'Mobile is required';
     else if (form.mobile.length < 10) newErrors.mobile = 'Enter valid mobile number';
-    if (!form.dob) newErrors.dob = 'Date of birth required';
+    if (!form.dateOfBirth) newErrors.dateOfBirth = 'Date of birth required';
     if (!form.password) newErrors.password = 'Password is required';
     else if (form.password.length < 6) newErrors.password = 'Min 6 characters';
     if (!form.confirmPassword) newErrors.confirmPassword = 'Please confirm password';
@@ -95,14 +96,15 @@ const SignUpScreen = ({ navigation }) => {
     if (!validate()) return;
     try {
       const payload = {
-        first_name: form.firstName.trim(),
-        last_name: form.lastName.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
         email: form.email.trim().toLowerCase(),
         password: form.password,
-        mobile: form.mobile.trim(),
-        dob: form.dob,
+        phone: form.mobile.trim(),
+        dateOfBirth: form.dateOfBirth,
       };
       await dispatch(signup(payload)).unwrap();
+      Alert.alert('Success', 'Your account has been created successfully!');
     } catch (err) {
       // error is already set in Redux state
     }
@@ -232,9 +234,9 @@ const SignUpScreen = ({ navigation }) => {
 
             <DatePickerInput
               label={STRINGS.BIRTH_DATE}
-              value={form.dob}
-              onChange={v => handleChange('dob', v)}
-              error={errors.dob}
+              value={form.dateOfBirth}
+              onChange={v => handleChange('dateOfBirth', v)}
+              error={errors.dateOfBirth}
               maxYear={new Date().getFullYear() - 13}
             />
           </Animated.View>

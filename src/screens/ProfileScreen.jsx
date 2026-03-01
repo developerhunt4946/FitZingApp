@@ -17,19 +17,33 @@ import { User, Phone, MapPin, CheckCircle, ChevronLeft, Camera, LogOut } from 'l
 import { COLORS, FONTS, SPACING } from '../theme';
 import STRINGS from '../constants/strings';
 import { updateProfile, clearError } from '../redux/slices/authSlice';
-import { AppInput } from '../components';
+import { AppInput, DatePickerInput } from '../components';
 
 const ProfileScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const { user, loading, error } = useSelector((state) => state.auth);
 
     const [formData, setFormData] = useState({
-        firstName: user?.firstName || '',
-        lastName: user?.lastName || '',
-        phone: user?.phone || '',
+        firstName: user?.firstName || user?.first_name || '',
+        lastName: user?.lastName || user?.last_name || '',
+        phone: user?.phone || user?.mobile || '',
+        dateOfBirth: user?.dateOfBirth || user?.dob || '',
         city: user?.city || '',
         state: user?.state || '',
     });
+
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                firstName: user?.firstName || user?.first_name || '',
+                lastName: user?.lastName || user?.last_name || '',
+                phone: user?.phone || user?.mobile || '',
+                dateOfBirth: user?.dateOfBirth || user?.dob || '',
+                city: user?.city || '',
+                state: user?.state || '',
+            });
+        }
+    }, [user]);
 
     useEffect(() => {
         if (error) {
@@ -79,8 +93,11 @@ const ProfileScreen = ({ navigation }) => {
                             <Camera size={16} color={COLORS.white} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.userNameText}>{user?.firstName} {user?.lastName}</Text>
+                    <Text style={styles.userNameText}>{user?.firstName || user?.first_name} {user?.lastName || user?.last_name}</Text>
                     <Text style={styles.userEmailText}>{user?.email}</Text>
+                    <View style={styles.roleBadge}>
+                        <Text style={styles.roleText}>{(user?.role || user?.userRole || 'User').toUpperCase()}</Text>
+                    </View>
                 </View>
             </View>
 
@@ -117,6 +134,13 @@ const ProfileScreen = ({ navigation }) => {
                                 />
                             </View>
                         </View>
+
+                        <DatePickerInput
+                            label={STRINGS.BIRTH_DATE}
+                            value={formData.dateOfBirth}
+                            onChange={(text) => handleChange('dateOfBirth', text)}
+                            maxYear={new Date().getFullYear() - 13}
+                        />
 
                         <AppInput
                             label={STRINGS.MOBILE}
@@ -304,6 +328,19 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         letterSpacing: 0.5,
+    },
+    roleBadge: {
+        marginTop: 6,
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        borderRadius: 20,
+    },
+    roleText: {
+        color: COLORS.white,
+        fontSize: 10,
+        fontWeight: '900',
+        letterSpacing: 1,
     },
 });
 
