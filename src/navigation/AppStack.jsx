@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
-import { HomeScreen, TournamentDetailsScreen, CreateTournamentScreen } from '../screens';
+import { HomeScreen, TournamentDetailsScreen, CreateTournamentScreen, ProfileScreen } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
 import { Home, User, Settings, Plus } from 'lucide-react-native';
 import SCREEN_NAMES from '../constants/screenNames';
@@ -60,7 +60,7 @@ const SharedStackScreens = () => (
 // Profile Stack
 const ProfileStack = () => (
   <Stack.Navigator screenOptions={screenOptions}>
-    <Stack.Screen name={SCREEN_NAMES.PROFILE} component={HomeScreen} options={{ title: STRINGS.PROFILE, headerShown: false }} />
+    <Stack.Screen name={SCREEN_NAMES.PROFILE} component={ProfileScreen} options={{ title: STRINGS.PROFILE, headerShown: false }} />
     {SharedStackScreens()}
   </Stack.Navigator>
 );

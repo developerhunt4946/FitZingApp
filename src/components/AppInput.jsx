@@ -137,16 +137,16 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         height: 44,
-        paddingHorizontal: 14,
+        paddingHorizontal: 8,
         color: COLORS.text,
         fontSize: 14,
         fontWeight: '400',
     },
     inputWithLeftIcon: {
-        paddingLeft: 6,
+        paddingLeft: 4,
     },
     inputWithRightComponent: {
-        paddingRight: 6,
+        paddingRight: 4,
     },
     errorText: {
         fontSize: 11,

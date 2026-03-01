@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login as loginService, signup as signupService } from '../../services/authServices';
+import { updateProfile as updateProfileService } from '../../services/userServices';
 
 // Helper: persist auth data
 const persistAuth = async (token, user) => {
@@ -54,6 +55,26 @@ export const signup = createAsyncThunk(
       return { token, user };
     } catch (error) {
       return rejectWithValue(error.message || 'Signup failed. Please try again.');
+    }
+  }
+);
+
+export const updateProfile = createAsyncThunk(
+  'auth/updateProfile',
+  async (payload, { rejectWithValue }) => {
+    try {
+      const data = await updateProfileService(payload);
+      // The API might return the user object directly in data or data.user or data.data
+      const updatedUser = data?.data || data?.user || data;
+
+      if (updatedUser) {
+        const token = await AsyncStorage.getItem('authToken');
+        await persistAuth(token, updatedUser);
+        return updatedUser;
+      }
+      return rejectWithValue('Invalid response from server');
+    } catch (error) {
+      return rejectWithValue(error.message || 'Update failed. Please try again.');
     }
   }
 );
@@ -113,6 +134,22 @@ const authSlice = createSlice({
         state.token = action.payload.token;
       })
       .addCase(signup.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      });
+
+    // Update Profile
+    builder
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        // Merge updated fields into the existing user object to preserve other fields like email/ids
+        state.user = { ...state.user, ...action.payload };
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

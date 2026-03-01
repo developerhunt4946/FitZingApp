@@ -12,4 +12,10 @@ export const authAPI = {
     apiClient.post('/auth/logout'),
 };
 
+// User API
+export const userAPI = {
+  updateProfile: (payload) =>
+    apiClient.patch('/users/profile', payload),
+};
+
 export default authAPI;

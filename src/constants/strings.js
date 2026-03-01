@@ -12,6 +12,10 @@ const STRINGS = {
     VIEW_ALL: 'View all',
     HOME: 'Home',
     PROFILE: 'Profile',
+    EDIT_PROFILE: 'Edit Profile',
+    SAVE_CHANGES: 'Save Changes',
+    PROFILE_UPDATED: 'Profile updated successfully',
+    UPDATE_FAILED: 'Failed to update profile',
 
     // Auth Screens
     LOGIN_TITLE: 'Login to your account',
@@ -27,6 +31,8 @@ const STRINGS = {
     LAST_NAME: 'Last Name',
     MOBILE: 'Mobile Number',
     BIRTH_DATE: 'Date of Birth',
+    CITY: 'City',
+    STATE: 'State',
 
     // Home Screen
     WELCOME_BACK: 'Welcome back,',

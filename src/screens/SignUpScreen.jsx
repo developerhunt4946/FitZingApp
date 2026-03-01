@@ -115,7 +115,7 @@ const SignUpScreen = ({ navigation }) => {
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
@@ -156,7 +156,7 @@ const SignUpScreen = ({ navigation }) => {
                   label={STRINGS.FIRST_NAME}
                   value={form.firstName}
                   onChangeText={v => handleChange('firstName', v)}
-                  placeholder="First"
+                  placeholder="First Name"
                   leftIcon={
                     <View style={{ opacity: firstFocused ? 1 : 0.4 }}>
                       <User size={16} color={firstFocused ? COLORS.primary : COLORS.textSecondary} />
@@ -168,13 +168,13 @@ const SignUpScreen = ({ navigation }) => {
                   onBlur={() => setFirstFocused(false)}
                 />
               </View>
-              <View style={{ width: 10 }} />
+              <View style={{ width: SPACING['8'] }} />
               <View style={{ flex: 1 }}>
                 <AppInput
                   label={STRINGS.LAST_NAME}
                   value={form.lastName}
                   onChangeText={v => handleChange('lastName', v)}
-                  placeholder="Last"
+                  placeholder="Last Name"
                   leftIcon={
                     <View style={{ opacity: lastFocused ? 1 : 0.4 }}>
                       <User size={16} color={lastFocused ? COLORS.primary : COLORS.textSecondary} />
