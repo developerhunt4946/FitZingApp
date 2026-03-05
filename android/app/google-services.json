@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "291780268877",
+    "project_id": "fitzing-notifications-db",
+    "storage_bucket": "fitzing-notifications-db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:291780268877:android:7be11a75792d1d41cd1d04",
+        "android_client_info": {
+          "package_name": "com.fitzing"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBdcl3GNSalPrCqInAsMCLa83MGGW1xBqg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

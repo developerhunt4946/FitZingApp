@@ -189,7 +189,7 @@ const HomeScreen = () => {
           </View>
 
           {/* ── Quick Stats ─────────────────────────────── */}
-          <View style={styles.statsRow}>
+         {/* <View style={styles.statsRow}>
             {QUICK_STATS.map((stat) => {
               const Icon = stat.icon;
               return (
@@ -206,7 +206,7 @@ const HomeScreen = () => {
               );
             })}
           </View>
-
+*/}
           {/* ── All Tournaments ───────────────────────────── */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{STRINGS.EXCLUSIVE_TOURNAMENTS}</Text>

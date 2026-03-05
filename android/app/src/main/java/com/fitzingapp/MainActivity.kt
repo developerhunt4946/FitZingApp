@@ -1,4 +1,4 @@
-package com.fitzingapp
+package com.fitzing
 import android.os.Bundle
 
 import com.facebook.react.ReactActivity

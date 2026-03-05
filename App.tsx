@@ -6,18 +6,22 @@ import store from './src/redux/store';
 import { RootNavigator } from './src/navigation';
 import { COLORS } from './src/theme';
 import RNBootSplash from "react-native-bootsplash";
-
+import { requestNotificationPermission, notificationListener } from './src/services/notificationService'
 
 function App() {
-   useEffect(() => {
-  RNBootSplash.hide({ fade: true });
-}, []);
+  useEffect(() => {
+    RNBootSplash.hide({ fade: true });
+  }, []);
+  useEffect(() => {
+    requestNotificationPermission();
+    notificationListener();
+  }, []);
 
   return (
     <Provider store={store}>
       <SafeAreaProvider>
-        <StatusBar 
-          barStyle="dark-content" 
+        <StatusBar
+          barStyle="dark-content"
           backgroundColor={COLORS.background}
           translucent={false}
         />
