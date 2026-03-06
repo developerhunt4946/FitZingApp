@@ -1,6 +1,15 @@
 export { default as LoginScreen } from './LoginScreen';
 export { default as SignUpScreen } from './SignUpScreen';
-export { default as HomeScreen } from './HomeScreen';
-export { default as TournamentDetailsScreen } from './TournamentDetailsScreen';
-export { default as CreateTournamentScreen } from './CreateTournamentScreen';
-export { default as ProfileScreen } from './ProfileScreen';
+import NotificationScreen from './NotificationScreen';
+import HomeScreen from './HomeScreen';
+import TournamentDetailsScreen from './TournamentDetailsScreen';
+import CreateTournamentScreen from './CreateTournamentScreen';
+import ProfileScreen from './ProfileScreen';
+
+export {
+    HomeScreen,
+    TournamentDetailsScreen,
+    CreateTournamentScreen,
+    ProfileScreen,
+    NotificationScreen,
+};

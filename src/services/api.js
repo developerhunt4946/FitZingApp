@@ -16,6 +16,8 @@ export const authAPI = {
 export const userAPI = {
   updateProfile: (payload) =>
     apiClient.patch('/users/profile', payload),
+  updateFcmToken: (fcmToken) =>
+    apiClient.post('/users/fcm-token', { fcmToken }),
 };
 
 export default authAPI;

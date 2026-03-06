@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import { Sidebar, TournamentList } from '../components';
 import { Bell, User, Trophy, Zap, ChevronRight } from 'lucide-react-native';
 import { fetchTournaments } from '../redux/slices/tournamentSlice';
 import STRINGS from '../constants/strings';
+import SCREEN_NAMES from '../constants/screenNames';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -72,8 +74,10 @@ const BannerItem = ({ item }) => (
 // ─── Home Screen ──────────────────────────────────────────────────
 const HomeScreen = () => {
   const dispatch = useDispatch();
+  const navigation = useNavigation();
   const { user } = useSelector(state => state.auth);
   const { tournaments, loading, error } = useSelector(state => state.tournament);
+  const { unreadCount } = useSelector(state => state.notifications);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
 
@@ -150,12 +154,18 @@ const HomeScreen = () => {
             </View>
 
             {/* Right: Notification bell */}
-            <TouchableOpacity style={styles.notifBtn} activeOpacity={0.75}>
+            <TouchableOpacity
+              style={styles.notifBtn}
+              activeOpacity={0.75}
+              onPress={() => navigation.navigate(SCREEN_NAMES.NOTIFICATION)}
+            >
               <Bell size={22} color={COLORS.text} />
               {/* Badge */}
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeText}>3</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.notifBadge}>
+                  <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -189,7 +199,7 @@ const HomeScreen = () => {
           </View>
 
           {/* ── Quick Stats ─────────────────────────────── */}
-         {/* <View style={styles.statsRow}>
+          {/* <View style={styles.statsRow}>
             {QUICK_STATS.map((stat) => {
               const Icon = stat.icon;
               return (

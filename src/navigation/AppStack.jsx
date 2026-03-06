@@ -4,7 +4,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSelector } from 'react-redux';
-import { HomeScreen, TournamentDetailsScreen, CreateTournamentScreen, ProfileScreen } from '../screens';
+import {
+  HomeScreen,
+  TournamentDetailsScreen,
+  CreateTournamentScreen,
+  ProfileScreen,
+  NotificationScreen,
+} from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
 import { Home, User, Settings, Plus } from 'lucide-react-native';
 import SCREEN_NAMES from '../constants/screenNames';
@@ -48,6 +54,7 @@ const HomeStack = () => (
   <Stack.Navigator screenOptions={screenOptions}>
     <Stack.Screen name={SCREEN_NAMES.HOME} component={HomeScreen} options={{ headerShown: false }} />
     <Stack.Screen name={SCREEN_NAMES.TOURNAMENT_DETAILS} component={TournamentDetailsScreen} options={{ headerShown: false }} />
+    <Stack.Screen name={SCREEN_NAMES.NOTIFICATION} component={NotificationScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 

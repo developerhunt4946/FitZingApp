@@ -13,3 +13,17 @@ export const updateProfile = async (payload) => {
         throw error.response?.data || error;
     }
 };
+
+/**
+ * Update FCM token for the user
+ * @param {string} fcmToken 
+ * @returns {Promise<Object>}
+ */
+export const updateFcmToken = async (fcmToken) => {
+    try {
+        const response = await userAPI.updateFcmToken(fcmToken);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};

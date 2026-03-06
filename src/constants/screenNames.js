@@ -18,6 +18,7 @@ const SCREEN_NAMES = {
     HOME_STACK: 'HomeStack',
     PROFILE_STACK: 'ProfileStack',
     SETTINGS_STACK: 'SettingsStack',
+    NOTIFICATION: 'Notification',
 };
 
 export default SCREEN_NAMES;
