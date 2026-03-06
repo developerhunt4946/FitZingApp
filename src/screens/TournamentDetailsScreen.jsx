@@ -20,6 +20,11 @@ import {
     ChevronRight,
     ShieldCheck,
     Zap,
+    Users,
+    UserCircle,
+    Mail,
+    Phone,
+    Percent,
 } from 'lucide-react-native';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
@@ -148,8 +153,60 @@ const TournamentDetailsScreen = ({ route }) => {
                             </View>
                             {tournament.categories.map((cat) => (
                                 <View key={cat.id} style={styles.categoryItem}>
-                                    <Text style={styles.categoryName}>{cat.name}</Text>
-                                    <Text style={styles.categoryFee}>₹{cat.entryFee}</Text>
+                                    <View style={styles.categoryHeader}>
+                                        <Text style={styles.categoryName}>{cat.name}</Text>
+                                        <Text style={styles.categoryFee}>₹{cat.entryFee}</Text>
+                                    </View>
+
+                                    <View style={styles.catSpecs}>
+                                        <View style={styles.specItem}>
+                                            <Users size={12} color={COLORS.textTertiary} />
+                                            <Text style={styles.specText}>
+                                                {cat.minPlayers}-{cat.maxPlayers} Players
+                                            </Text>
+                                        </View>
+                                        <View style={styles.specItem}>
+                                            <UserCircle size={12} color={COLORS.textTertiary} />
+                                            <Text style={styles.specText}>
+                                                Age: {cat.minAge}-{cat.maxAge}
+                                            </Text>
+                                        </View>
+                                        {cat.discount > 0 && (
+                                            <View style={styles.specItem}>
+                                                <Percent size={12} color={COLORS.success || '#4CAF50'} />
+                                                <Text style={[styles.specText, { color: COLORS.success || '#4CAF50' }]}>
+                                                    {cat.discount}% Off
+                                                </Text>
+                                            </View>
+                                        )}
+                                    </View>
+                                </View>
+                            ))}
+                        </>
+                    )}
+
+                    {/* Organizers */}
+                    {tournament.organizers?.length > 0 && (
+                        <>
+                            <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+                                <UserCircle size={18} color={COLORS.primary} />
+                                <Text style={styles.sectionTitle}>{STRINGS.ORGANIZERS}</Text>
+                            </View>
+                            {tournament.organizers.map((org, index) => (org.name || org.contact) && (
+                                <View key={index} style={styles.organizerCard}>
+                                    <View style={styles.orgInfo}>
+                                        <Text style={styles.orgName}>{org.name || 'Anonymous Organizer'}</Text>
+                                        {org.contact && (
+                                            <View style={styles.contactRow}>
+                                                {org.contact.includes('@') ? (
+                                                    <Mail size={12} color={COLORS.textTertiary} />
+                                                ) : (
+                                                    <Phone size={12} color={COLORS.textTertiary} />
+                                                )}
+                                                <Text style={styles.contactText}>{org.contact}</Text>
+                                            </View>
+                                        )}
+                                    </View>
                                 </View>
                             ))}
                         </>
@@ -326,15 +383,18 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     categoryItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         backgroundColor: COLORS.surface,
         padding: 16,
         borderRadius: 12,
         marginBottom: 10,
         borderWidth: 1,
         borderColor: COLORS.borderLight,
+    },
+    categoryHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
     },
     categoryName: {
         fontSize: 14,
@@ -345,6 +405,50 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '800',
         color: COLORS.primary,
+    },
+    catSpecs: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginTop: 4,
+    },
+    specItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    specText: {
+        fontSize: 11,
+        color: COLORS.textSecondary,
+        fontWeight: '500',
+    },
+    organizerCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.surface,
+        padding: 12,
+        borderRadius: 12,
+        marginBottom: 8,
+        borderWidth: 1,
+        borderColor: COLORS.borderLight,
+    },
+    orgInfo: {
+        flex: 1,
+    },
+    orgName: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 2,
+    },
+    contactRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    contactText: {
+        fontSize: 12,
+        color: COLORS.textTertiary,
     },
     footer: {
         position: 'absolute',

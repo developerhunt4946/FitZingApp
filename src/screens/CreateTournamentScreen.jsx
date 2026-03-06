@@ -29,12 +29,22 @@ const CreateTournamentScreen = ({ navigation }) => {
         name: '',
         description: '',
         location: '',
-        format: 'knockout',
+        format: 'group',
         startDate: '',
         endDate: '',
         entryFee: '',
         discount: '0',
-        categories: [{ name: '', entryFee: '', status: 'upcoming', isActive: true }],
+        categories: [{
+            name: '',
+            entryFee: '',
+            minPlayers: '',
+            maxPlayers: '',
+            minAge: '',
+            maxAge: '',
+            discount: '0',
+            status: 'upcoming',
+            isActive: true
+        }],
         sponsors: [{ name: '', logo: '' }],
         organizers: [{ name: '', contact: '' }],
         image: null,
@@ -47,6 +57,14 @@ const CreateTournamentScreen = ({ navigation }) => {
     });
 
     const [imagePickerVisible, setImagePickerVisible] = useState(false);
+    const [formatPickerVisible, setFormatPickerVisible] = useState(false);
+
+    const FORMAT_OPTIONS = [
+        { label: 'Group', value: 'group' },
+        { label: 'Knockout', value: 'knockout' },
+        { label: 'League', value: 'league' },
+        { label: 'Group + Knockout', value: 'group_knockout' },
+    ];
 
     const handleChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -58,7 +76,17 @@ const CreateTournamentScreen = ({ navigation }) => {
             [type]: [
                 ...prev[type],
                 type === 'categories'
-                    ? { name: '', entryFee: '', status: 'upcoming', isActive: true }
+                    ? {
+                        name: '',
+                        entryFee: '',
+                        minPlayers: '',
+                        maxPlayers: '',
+                        minAge: '',
+                        maxAge: '',
+                        discount: '0',
+                        status: 'upcoming',
+                        isActive: true
+                    }
                     : type === 'sponsors'
                         ? { name: '', logo: '' }
                         : { name: '', contact: '' },
@@ -125,7 +153,12 @@ const CreateTournamentScreen = ({ navigation }) => {
             discount: Number(formData.discount) || 0,
             categories: formData.categories.map(cat => ({
                 ...cat,
-                entryFee: Number(cat.entryFee) || 0
+                entryFee: Number(cat.entryFee) || 0,
+                minPlayers: Number(cat.minPlayers) || 0,
+                maxPlayers: Number(cat.maxPlayers) || 0,
+                minAge: Number(cat.minAge) || 0,
+                maxAge: Number(cat.maxAge) || 0,
+                discount: Number(cat.discount) || 0,
             })),
             // Use selected image URI if available
             imageURL: formData.image?.uri || "https://img.freepik.com/free-vector/cricket-stadium-background_1048-5221.jpg",
@@ -213,6 +246,17 @@ const CreateTournamentScreen = ({ navigation }) => {
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Basic Information</Text>
                     {renderInput(STRINGS.TOURNAMENT_NAME, formData.name, (val) => handleChange('name', val), 'Enter event name', <Award size={18} color={COLORS.primary} />)}
+                    {renderInput(
+                        'Tournament Format',
+                        FORMAT_OPTIONS.find(opt => opt.value === formData.format)?.label,
+                        null,
+                        'Select Format',
+                        <Users size={18} color={COLORS.primary} />,
+                        'default',
+                        false,
+                        true,
+                        () => setFormatPickerVisible(true)
+                    )}
                     {renderInput(STRINGS.DESCRIPTION, formData.description, (val) => handleChange('description', val), 'Tell us about the tournament...', <Info size={18} color={COLORS.primary} />, 'default', true)}
                     {renderInput(STRINGS.LOCATION, formData.location, (val) => handleChange('location', val), 'Venue address/City', <MapPin size={18} color={COLORS.primary} />)}
                     <View style={styles.row}>
@@ -282,14 +326,72 @@ const CreateTournamentScreen = ({ navigation }) => {
                                 placeholder="Category Name (e.g. Under-19)"
                                 placeholderTextColor={COLORS.textTertiary}
                             />
-                            <TextInput
-                                style={styles.itemInput}
-                                value={cat.entryFee}
-                                onChangeText={(val) => handleNestedChange('categories', index, 'entryFee', val)}
-                                placeholder="Category Entry Fee"
-                                placeholderTextColor={COLORS.textTertiary}
-                                keyboardType="numeric"
-                            />
+                            <View style={styles.row}>
+                                <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                                    <TextInput
+                                        style={styles.itemInput}
+                                        value={cat.entryFee}
+                                        onChangeText={(val) => handleNestedChange('categories', index, 'entryFee', val)}
+                                        placeholder="Entry Fee"
+                                        placeholderTextColor={COLORS.textTertiary}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
+                                    <TextInput
+                                        style={styles.itemInput}
+                                        value={cat.discount}
+                                        onChangeText={(val) => handleNestedChange('categories', index, 'discount', val)}
+                                        placeholder="Discount %"
+                                        placeholderTextColor={COLORS.textTertiary}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                                    <TextInput
+                                        style={styles.itemInput}
+                                        value={cat.minPlayers}
+                                        onChangeText={(val) => handleNestedChange('categories', index, 'minPlayers', val)}
+                                        placeholder="Min Players"
+                                        placeholderTextColor={COLORS.textTertiary}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
+                                    <TextInput
+                                        style={styles.itemInput}
+                                        value={cat.maxPlayers}
+                                        onChangeText={(val) => handleNestedChange('categories', index, 'maxPlayers', val)}
+                                        placeholder="Max Players"
+                                        placeholderTextColor={COLORS.textTertiary}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
+                            <View style={styles.row}>
+                                <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                                    <TextInput
+                                        style={styles.itemInput}
+                                        value={cat.minAge}
+                                        onChangeText={(val) => handleNestedChange('categories', index, 'minAge', val)}
+                                        placeholder="Min Age"
+                                        placeholderTextColor={COLORS.textTertiary}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                                <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
+                                    <TextInput
+                                        style={styles.itemInput}
+                                        value={cat.maxAge}
+                                        onChangeText={(val) => handleNestedChange('categories', index, 'maxAge', val)}
+                                        placeholder="Max Age"
+                                        placeholderTextColor={COLORS.textTertiary}
+                                        keyboardType="numeric"
+                                    />
+                                </View>
+                            </View>
                         </View>
                     ))}
                 </View>
@@ -371,7 +473,43 @@ const CreateTournamentScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </ScrollView>
 
-            {/* Image Picker Modal */}
+            {/* Format Picker Modal */}
+            <Modal
+                transparent
+                visible={formatPickerVisible}
+                animationType="fade"
+                onRequestClose={() => setFormatPickerVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setFormatPickerVisible(false)}
+                >
+                    <View style={styles.imagePickerMenu}>
+                        <Text style={styles.modalTitle}>Select Tournament Format</Text>
+                        {FORMAT_OPTIONS.map((option) => (
+                            <TouchableOpacity
+                                key={option.value}
+                                style={styles.menuItem}
+                                onPress={() => {
+                                    handleChange('format', option.value);
+                                    setFormatPickerVisible(false);
+                                }}
+                            >
+                                <Text style={[
+                                    styles.menuText,
+                                    formData.format === option.value && { color: COLORS.primary, fontWeight: '700' }
+                                ]}>
+                                    {option.label}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                        <TouchableOpacity style={styles.cancelItem} onPress={() => setFormatPickerVisible(false)}>
+                            <Text style={styles.cancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
             <Modal
                 transparent
                 visible={imagePickerVisible}
