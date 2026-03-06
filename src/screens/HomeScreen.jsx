@@ -229,7 +229,7 @@ const HomeScreen = () => {
           </View>
 
           <TournamentList
-            tournaments={tournaments}
+            tournaments={tournaments || []}
             loading={loading}
             error={error}
           />

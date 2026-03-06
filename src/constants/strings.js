@@ -74,6 +74,8 @@ const STRINGS = {
     CONTACT_INFO: 'Contact Email/Phone',
     SUBMIT: 'Create Event',
     SAVING: 'Saving...',
+    OVERS_PER_INNINGS: 'Overs Per Innings',
+    WINNER_PRIZE: 'Winner Prize',
 
     // Sidebar / Menu
     MY_EVENTS: 'My Events',

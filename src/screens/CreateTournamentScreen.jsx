@@ -48,6 +48,8 @@ const CreateTournamentScreen = ({ navigation }) => {
         sponsors: [{ name: '', logo: '' }],
         organizers: [{ name: '', contact: '' }],
         image: null,
+        oversPerInnings: '',
+        winnerPrize: '',
     });
 
     const [datePickerConfig, setDatePickerConfig] = useState({
@@ -162,6 +164,8 @@ const CreateTournamentScreen = ({ navigation }) => {
             })),
             // Use selected image URI if available
             imageURL: formData.image?.uri || "https://img.freepik.com/free-vector/cricket-stadium-background_1048-5221.jpg",
+            oversPerInnings: Number(formData.oversPerInnings) || 0,
+            winnerPrize: Number(formData.winnerPrize) || 0,
         };
 
         // Remove internal image asset from payload
@@ -298,6 +302,14 @@ const CreateTournamentScreen = ({ navigation }) => {
                         </View>
                         <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
                             {renderInput(STRINGS.DISCOUNT, formData.discount, (val) => handleChange('discount', val), '0%', null, 'numeric')}
+                        </View>
+                    </View>
+                    <View style={[styles.row, { marginTop: SPACING['16'] }]}>
+                        <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                            {renderInput(STRINGS.OVERS_PER_INNINGS, formData.oversPerInnings, (val) => handleChange('oversPerInnings', val), 'Enter overs', null, 'numeric')}
+                        </View>
+                        <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
+                            {renderInput(STRINGS.WINNER_PRIZE, formData.winnerPrize, (val) => handleChange('winnerPrize', val), 'Prize amount', null, 'numeric')}
                         </View>
                     </View>
                 </View>
