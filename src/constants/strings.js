@@ -83,6 +83,9 @@ const STRINGS = {
     REWARDS_OFFERS: 'Rewards & Offers',
     SETTINGS: 'Settings',
     HELP_SUPPORT: 'Help & Support',
+    BOOKINGS: 'Bookings',
+    BOOKINGS_LIVE_SOON: 'Bookings will be live soon!',
+    JOIN_LIVE_EVENTS: 'Till then, join live events and showcase your skills.',
 };
 
 export default STRINGS;

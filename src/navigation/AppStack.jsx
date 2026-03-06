@@ -10,9 +10,11 @@ import {
   CreateTournamentScreen,
   ProfileScreen,
   NotificationScreen,
+  RegistrationScreen,
+  BookingsScreen,
 } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
-import { Home, User, Settings, Plus } from 'lucide-react-native';
+import { Home, User, Ticket, Plus } from 'lucide-react-native';
 import SCREEN_NAMES from '../constants/screenNames';
 import STRINGS from '../constants/strings';
 
@@ -55,6 +57,7 @@ const HomeStack = () => (
     <Stack.Screen name={SCREEN_NAMES.HOME} component={HomeScreen} options={{ headerShown: false }} />
     <Stack.Screen name={SCREEN_NAMES.TOURNAMENT_DETAILS} component={TournamentDetailsScreen} options={{ headerShown: false }} />
     <Stack.Screen name={SCREEN_NAMES.NOTIFICATION} component={NotificationScreen} options={{ headerShown: false }} />
+    <Stack.Screen name={SCREEN_NAMES.REGISTRATION} component={RegistrationScreen} options={{ headerShown: false }} />
   </Stack.Navigator>
 );
 
@@ -72,10 +75,10 @@ const ProfileStack = () => (
   </Stack.Navigator>
 );
 
-// Settings Stack
-const SettingsStack = () => (
+// Bookings Stack
+const BookingsStack = () => (
   <Stack.Navigator screenOptions={screenOptions}>
-    <Stack.Screen name={SCREEN_NAMES.SETTINGS} component={HomeScreen} options={{ title: STRINGS.SETTINGS, headerShown: false }} />
+    <Stack.Screen name={SCREEN_NAMES.BOOKINGS} component={BookingsScreen} options={{ title: STRINGS.BOOKINGS, headerShown: false }} />
     {SharedStackScreens()}
   </Stack.Navigator>
 );
@@ -138,41 +141,30 @@ const AppStack = () => {
           options={{
             tabBarLabel: () => null,
             tabBarButton: (props) => <CustomTabBarButton {...props} isProminent />,
-            tabBarIcon: ({ color }) => <Plus size={28} color={COLORS.white} />,
+            tabBarIcon: () => <Plus size={28} color={COLORS.white} />,
           }}
         />
       ) : (
         <Tab.Screen
-          name={SCREEN_NAMES.PROFILE}
-          component={ProfileStack}
+          name={SCREEN_NAMES.BOOKINGS_STACK}
+          component={BookingsStack}
           options={{
             tabBarLabel: () => null,
             tabBarButton: (props) => <CustomTabBarButton {...props} isProminent />,
-            tabBarIcon: ({ color }) => <User size={28} color={COLORS.white} />,
+            tabBarIcon: () => <Ticket size={28} color={COLORS.white} />,
           }}
         />
       )}
 
-      {/* Tab 3: Contextual (User -> Settings, Admin -> Profile) */}
-      {isAdmin ? (
-        <Tab.Screen
-          name={SCREEN_NAMES.PROFILE}
-          component={ProfileStack}
-          options={{
-            title: STRINGS.PROFILE || 'Profile',
-            tabBarIcon: ({ color }) => <User size={22} color={color} />,
-          }}
-        />
-      ) : (
-        <Tab.Screen
-          name={SCREEN_NAMES.SETTINGS}
-          component={SettingsStack}
-          options={{
-            title: STRINGS.SETTINGS || 'Settings',
-            tabBarIcon: ({ color }) => <Settings size={22} color={color} />,
-          }}
-        />
-      )}
+      {/* Tab 3: Contextual (Admin -> Profile, User -> Profile) */}
+      <Tab.Screen
+        name={SCREEN_NAMES.PROFILE_STACK}
+        component={ProfileStack}
+        options={{
+          title: STRINGS.PROFILE,
+          tabBarIcon: ({ color }) => <User size={22} color={color} />,
+        }}
+      />
     </Tab.Navigator>
   );
 };

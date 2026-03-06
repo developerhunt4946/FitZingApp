@@ -164,7 +164,13 @@ const TournamentDetailsScreen = ({ route }) => {
                 <TouchableOpacity style={[styles.footerBtn, styles.secondaryBtn]}>
                     <Text style={styles.secondaryBtnText}>{STRINGS.SHOW_MATCHES}</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.footerBtn, styles.primaryBtn]}>
+                <TouchableOpacity
+                    style={[styles.footerBtn, styles.primaryBtn]}
+                    onPress={() => navigation.navigate(SCREEN_NAMES.REGISTRATION, {
+                        tournamentId: tournament.id,
+                        categories: tournament.categories
+                    })}
+                >
                     <Text style={styles.primaryBtnText}>{STRINGS.REGISTER_NOW}</Text>
                 </TouchableOpacity>
             </View>

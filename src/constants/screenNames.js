@@ -19,6 +19,9 @@ const SCREEN_NAMES = {
     PROFILE_STACK: 'ProfileStack',
     SETTINGS_STACK: 'SettingsStack',
     NOTIFICATION: 'Notification',
+    REGISTRATION: 'Registration',
+    BOOKINGS: 'Bookings',
+    BOOKINGS_STACK: 'BookingsStack',
 };
 
 export default SCREEN_NAMES;
