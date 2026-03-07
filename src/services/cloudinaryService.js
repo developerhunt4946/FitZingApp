@@ -1,25 +1,22 @@
 import axios from 'axios';
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET } from '@env';
 
-/**
- * Uploads an image to Cloudinary using an unsigned upload preset.
- * @param {Object} imageAsset - The image asset object from react-native-image-picker
- * @returns {Promise<string>} - The secure URL of the uploaded image
- */
 export const uploadToCloudinary = async (imageAsset) => {
     if (!imageAsset || !imageAsset.uri) {
         throw new Error('Invalid image asset');
     }
 
-    const cloudName = CLOUDINARY_CLOUD_NAME || 'dcwz6f9m5'; // Fallback or placeholder
-    const uploadPreset = CLOUDINARY_UPLOAD_PRESET || 'fitzing_unsigned';
+    const cloudName = CLOUDINARY_CLOUD_NAME || 'dctaobwaj';
+    const uploadPreset = CLOUDINARY_UPLOAD_PRESET || 'fitzing_cloud';
 
     const formData = new FormData();
+
     formData.append('file', {
         uri: imageAsset.uri,
         type: imageAsset.type || 'image/jpeg',
-        name: imageAsset.fileName || `tournament_${Date.now()}.jpg`,
+        name: imageAsset.fileName || `image_${Date.now()}.jpg`,
     });
+
     formData.append('upload_preset', uploadPreset);
 
     try {
@@ -34,8 +31,9 @@ export const uploadToCloudinary = async (imageAsset) => {
         );
 
         return response.data.secure_url;
+
     } catch (error) {
-        console.error('Cloudinary Upload Error:', error);
-        throw new Error(error.response?.data?.error?.message || 'Failed to upload image to Cloudinary');
+        console.error('Cloudinary Upload Error:', error.response?.data || error);
+        throw new Error(error.response?.data?.error?.message || 'Failed to upload image');
     }
 };
