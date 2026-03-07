@@ -81,6 +81,24 @@ const HomeScreen = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
 
+  // Memoized sorted tournaments
+  const sortedTournaments = React.useMemo(() => {
+    if (!tournaments) return [];
+    return [...tournaments].sort((a, b) => {
+      const statusA = (a.status || 'upcoming').toLowerCase();
+      const statusB = (b.status || 'upcoming').toLowerCase();
+
+      // Priority 1: Upcoming status
+      if (statusA === 'upcoming' && statusB !== 'upcoming') return -1;
+      if (statusA !== 'upcoming' && statusB === 'upcoming') return 1;
+
+      // Priority 2: Start Date (earliest first)
+      const dateA = new Date(a.startDate || 0);
+      const dateB = new Date(b.startDate || 0);
+      return dateA - dateB;
+    });
+  }, [tournaments]);
+
   const bannerRef = useRef(null);
   const currentIndex = useRef(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -229,7 +247,7 @@ const HomeScreen = () => {
           </View>
 
           <TournamentList
-            tournaments={tournaments || []}
+            tournaments={sortedTournaments}
             loading={loading}
             error={error}
           />

@@ -20,6 +20,7 @@ import DatePicker from 'react-native-date-picker';
 import { COLORS, FONTS, SPACING } from '../theme';
 import STRINGS from '../constants/strings';
 import { createTournament, clearTournamentError } from '../redux/slices/tournamentSlice';
+import { uploadToCloudinary } from '../services/cloudinaryService';
 
 const CreateTournamentScreen = ({ navigation }) => {
     const dispatch = useDispatch();
@@ -162,16 +163,24 @@ const CreateTournamentScreen = ({ navigation }) => {
                 maxAge: Number(cat.maxAge) || 0,
                 discount: Number(cat.discount) || 0,
             })),
-            // Use selected image URI if available
-            imageURL: formData.image?.uri || "https://img.freepik.com/free-vector/cricket-stadium-background_1048-5221.jpg",
+            imageURL: '', // Will be filled after upload
             oversPerInnings: Number(formData.oversPerInnings) || 0,
             winnerPrize: Number(formData.winnerPrize) || 0,
         };
 
-        // Remove internal image asset from payload
-        delete payload.image;
-
         try {
+            // 1. Upload image to Cloudinary if selected
+            let uploadedImageUrl = "https://img.freepik.com/free-vector/cricket-stadium-background_1048-5221.jpg";
+            if (formData.image) {
+                try {
+                    uploadedImageUrl = await uploadToCloudinary(formData.image);
+                } catch (uploadError) {
+                    Alert.alert('Upload Failed', uploadError.message || 'Failed to upload image. Using default image.');
+                }
+            }
+
+            payload.imageURL = uploadedImageUrl;
+
             const resultAction = await dispatch(createTournament(payload));
             if (createTournament.fulfilled.match(resultAction)) {
                 Alert.alert('Success', 'Tournament created successfully!', [
