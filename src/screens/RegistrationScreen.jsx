@@ -46,10 +46,17 @@ const RegistrationScreen = ({ route }) => {
     const calculateTotal = useMemo(() => {
         if (!currentCategory) return { entryFee: 0, discount: 0, gst: 0, total: 0 };
         const entryFee = currentCategory.entryFee || 0;
-        const discount = 0; // Placeholder for future logic
-        const gst = Math.round(entryFee * 0.18);
-        const total = entryFee - discount + gst;
-        return { entryFee, discount, gst, total };
+        const discountPercent = currentCategory.discount || 0;
+        const discountAmount = entryFee * (discountPercent / 100);
+        const discountedFee = entryFee - discountAmount;
+        const gst = discountedFee * 0.18;
+        const total = discountedFee + gst;
+        return {
+            entryFee: entryFee,
+            discount: discountAmount,
+            gst: gst,
+            total: total
+        };
     }, [currentCategory]);
 
     const handleAddPlayer = () => {
@@ -105,7 +112,7 @@ const RegistrationScreen = ({ route }) => {
                 players,
                 amount: calculateTotal.total
             });
-            Alert.alert('Payment Initialized', `Amount: ₹${calculateTotal.total}\nTeam: ${teamName}`);
+            Alert.alert('Payment Initialized', `Amount: ₹${(Number(calculateTotal.total) || 0).toFixed(2)}\nTeam: ${teamName}`);
         }
     };
 
@@ -161,7 +168,7 @@ const RegistrationScreen = ({ route }) => {
                                         <Text style={styles.catConstraintText}>Age: {cat.minAge}-{cat.maxAge} years</Text>
                                         <Text style={styles.catConstraintText}>Players: {cat.minPlayers}-{cat.maxPlayers}</Text>
                                     </View>
-                                    <Text style={styles.categoryFeeText}>₹{cat.entryFee}</Text>
+                                    <Text style={styles.categoryFeeText}>₹{(Number(cat?.entryFee) || 0).toFixed(2)}</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -259,20 +266,20 @@ const RegistrationScreen = ({ route }) => {
                         <View style={styles.feeCard}>
                             <View style={styles.feeRow}>
                                 <Text style={styles.feeLabel}>Entry Fee ({currentCategory?.name || 'Category'})</Text>
-                                <Text style={styles.feeValue}>₹{calculateTotal.entryFee}</Text>
+                                <Text style={styles.feeValue}>₹{(Number(calculateTotal?.entryFee) || 0).toFixed(2)}</Text>
                             </View>
                             <View style={styles.feeRow}>
                                 <Text style={styles.feeLabel}>Discount</Text>
-                                <Text style={[styles.feeValue, { color: COLORS.success }]}>- ₹{calculateTotal.discount}</Text>
+                                <Text style={[styles.feeValue, { color: COLORS.success }]}>- ₹{(Number(calculateTotal?.discount) || 0).toFixed(2)}</Text>
                             </View>
                             <View style={styles.feeRow}>
                                 <Text style={styles.feeLabel}>GST (18%)</Text>
-                                <Text style={styles.feeValue}>₹{calculateTotal.gst}</Text>
+                                <Text style={styles.feeValue}>₹{(Number(calculateTotal?.gst) || 0).toFixed(2)}</Text>
                             </View>
                             <View style={styles.divider} />
                             <View style={styles.feeRow}>
                                 <Text style={styles.totalLabel}>Total Amount</Text>
-                                <Text style={styles.totalValue}>₹{calculateTotal.total}</Text>
+                                <Text style={styles.totalValue}>₹{(Number(calculateTotal?.total) || 0).toFixed(2)}</Text>
                             </View>
                         </View>
                     </View>
@@ -287,7 +294,7 @@ const RegistrationScreen = ({ route }) => {
                     disabled={!selectedCategory}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.payBtnText}>Pay Now ₹{calculateTotal.total}</Text>
+                    <Text style={styles.payBtnText}>Pay Now ₹{(Number(calculateTotal?.total) || 0).toFixed(2)}</Text>
                 </TouchableOpacity>
             </View>
         </View>

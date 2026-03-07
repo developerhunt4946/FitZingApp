@@ -45,7 +45,7 @@ const TournamentCard = ({ item }) => {
                     <Text style={styles.statusText}>{item.status?.toUpperCase() || STRINGS.UPCOMING}</Text>
                 </View>
                 <View style={styles.feeBadge}>
-                    <Text style={styles.feeText}>₹{item.entryFee}</Text>
+                    <Text style={styles.feeText}>₹{(Number(item.entryFee) || 0).toFixed(2)}</Text>
                 </View>
             </View>
 

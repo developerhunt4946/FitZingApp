@@ -130,7 +130,7 @@ const TournamentDetailsScreen = ({ route }) => {
                             <Zap size={20} color={COLORS.accent} />
                             <View>
                                 <Text style={styles.gridLabel}>{STRINGS.ENTRY_FEE}</Text>
-                                <Text style={styles.gridValue}>₹{tournament.entryFee}</Text>
+                                <Text style={styles.gridValue}>₹{(Number(tournament.entryFee) || 0).toFixed(2)}</Text>
                             </View>
                         </View>
                     </View>
@@ -155,7 +155,7 @@ const TournamentDetailsScreen = ({ route }) => {
                                 <View key={cat.id} style={styles.categoryItem}>
                                     <View style={styles.categoryHeader}>
                                         <Text style={styles.categoryName}>{cat.name}</Text>
-                                        <Text style={styles.categoryFee}>₹{cat.entryFee}</Text>
+                                        <Text style={styles.categoryFee}>₹{(Number(cat.entryFee) || 0).toFixed(2)}</Text>
                                     </View>
 
                                     <View style={styles.catSpecs}>

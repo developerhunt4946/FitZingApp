@@ -15,13 +15,11 @@ const SCREEN_NAMES = {
     // Stack Wrappers
     AUTH_STACK: 'AuthStack',
     APP_STACK: 'AppStack',
-    HOME_STACK: 'HomeStack',
-    PROFILE_STACK: 'ProfileStack',
-    SETTINGS_STACK: 'SettingsStack',
+
     NOTIFICATION: 'Notification',
     REGISTRATION: 'Registration',
     BOOKINGS: 'Bookings',
-    BOOKINGS_STACK: 'BookingsStack',
+
 };
 
 export default SCREEN_NAMES;
