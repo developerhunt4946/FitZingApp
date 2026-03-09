@@ -6,6 +6,7 @@ import TournamentDetailsScreen from './TournamentDetailsScreen';
 import RegistrationScreen from './RegistrationScreen';
 import BookingsScreen from './BookingsScreen';
 import CreateTournamentScreen from './CreateTournamentScreen';
+import CreateESportsTournamentScreen from './CreateESportsTournamentScreen';
 import ProfileScreen from './ProfileScreen';
 import AllTournamentsScreen from './AllTournamentsScreen';
 import RegistrationConfirmationScreen from './RegistrationConfirmationScreen';
@@ -18,6 +19,7 @@ export {
     HomeScreen,
     TournamentDetailsScreen,
     CreateTournamentScreen,
+    CreateESportsTournamentScreen,
     ProfileScreen,
     NotificationScreen,
     RegistrationScreen,

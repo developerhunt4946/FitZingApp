@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
     getAllTournaments,
     createTournament as createTournamentService,
+    createESportsTournament as createESportsTournamentService,
     registerTeam as registerTeamService,
     getRegisteredTeams as getRegisteredTeamsService,
     generateFixtures as generateFixturesService,
@@ -102,6 +103,20 @@ export const createTournament = createAsyncThunk(
     }
 );
 
+export const createESportsTournament = createAsyncThunk(
+    'tournament/createESports',
+    async (payload, { rejectWithValue }) => {
+        try {
+            const data = await createESportsTournamentService(payload);
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(
+                error?.message || 'Failed to create eSports tournament'
+            );
+        }
+    }
+);
+
 export const registerTeam = createAsyncThunk(
     'tournament/registerTeam',
     async ({ tournamentId, categoryId, registrationData }, { rejectWithValue }) => {
@@ -156,6 +171,19 @@ const tournamentSlice = createSlice({
                 state.tournaments = [action.payload, ...state.tournaments];
             })
             .addCase(createTournament.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // Create eSports Tournament
+            .addCase(createESportsTournament.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createESportsTournament.fulfilled, (state, action) => {
+                state.loading = false;
+                state.tournaments = [action.payload, ...state.tournaments];
+            })
+            .addCase(createESportsTournament.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload;
             })

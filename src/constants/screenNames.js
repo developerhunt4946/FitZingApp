@@ -11,6 +11,7 @@ const SCREEN_NAMES = {
     // Tournament
     TOURNAMENT_DETAILS: 'TournamentDetails',
     CREATE_TOURNAMENT: 'CreateTournament',
+    CREATE_ESPORTS_TOURNAMENT: 'CreateESportsTournament',
     ALL_TOURNAMENTS: 'AllTournaments',
 
     // Stack Wrappers
