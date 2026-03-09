@@ -44,8 +44,20 @@ const TournamentCard = ({ item }) => {
                 <View style={styles.statusBadge}>
                     <Text style={styles.statusText}>{item.status?.toUpperCase() || STRINGS.UPCOMING}</Text>
                 </View>
+                {item.discount > 0 && (
+                    <View style={styles.discountBadge}>
+                        <Text style={styles.discountText}>{item.discount}% OFF</Text>
+                    </View>
+                )}
                 <View style={styles.feeBadge}>
-                    <Text style={styles.feeText}>₹{(Number(item.entryFee) || 0).toFixed(2)}</Text>
+                    {item.discount > 0 ? (
+                        <View style={styles.priceRow}>
+                            <Text style={styles.originalFeeText}>₹{(Number(item.entryFee) || 0).toFixed(2)}</Text>
+                            <Text style={styles.feeText}>₹{(Number(item.entryFee) * (1 - item.discount / 100)).toFixed(2)}</Text>
+                        </View>
+                    ) : (
+                        <Text style={styles.feeText}>₹{(Number(item.entryFee) || 0).toFixed(2)}</Text>
+                    )}
                 </View>
             </View>
 
@@ -167,10 +179,35 @@ const styles = StyleSheet.create({
         paddingVertical: 4,
         borderRadius: 8,
     },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    originalFeeText: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 10,
+        fontWeight: '600',
+        textDecorationLine: 'line-through',
+    },
     feeText: {
         color: COLORS.white,
         fontSize: 12,
         fontWeight: '800',
+    },
+    discountBadge: {
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        backgroundColor: COLORS.success,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 6,
+    },
+    discountText: {
+        color: COLORS.white,
+        fontSize: 10,
+        fontWeight: '700',
     },
     cardContent: {
         padding: SPACING['12'],

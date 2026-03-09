@@ -7,6 +7,8 @@ import RegistrationScreen from './RegistrationScreen';
 import BookingsScreen from './BookingsScreen';
 import CreateTournamentScreen from './CreateTournamentScreen';
 import ProfileScreen from './ProfileScreen';
+import AllTournamentsScreen from './AllTournamentsScreen';
+import RegistrationConfirmationScreen from './RegistrationConfirmationScreen';
 
 export {
     HomeScreen,
@@ -16,4 +18,6 @@ export {
     NotificationScreen,
     RegistrationScreen,
     BookingsScreen,
+    AllTournamentsScreen,
+    RegistrationConfirmationScreen,
 };

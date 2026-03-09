@@ -13,23 +13,27 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, X, Calendar, MapPin, Info, Users, Briefcase, Award, Camera, Image as ImageIcon } from 'lucide-react-native';
+import { Plus, X, Calendar, MapPin, Info, Users, Briefcase, Trophy, Award, Camera, Image as ImageIcon } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import DatePicker from 'react-native-date-picker';
 import { COLORS, FONTS, SPACING } from '../theme';
 import STRINGS from '../constants/strings';
 import { createTournament, clearTournamentError } from '../redux/slices/tournamentSlice';
+import { fetchSports } from '../redux/slices/sportsSlice';
 import { uploadToCloudinary } from '../services/cloudinaryService';
+import { CheckCircle2 } from 'lucide-react-native';
 
 const CreateTournamentScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const { loading, error } = useSelector((state) => state.tournament);
+    const { sports: sportsList } = useSelector((state) => state.sports);
 
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         location: '',
+        sports: { id: '', name: '' },
         format: 'group',
         startDate: '',
         endDate: '',
@@ -53,6 +57,8 @@ const CreateTournamentScreen = ({ navigation }) => {
         winnerPrize: '',
     });
 
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
     const [datePickerConfig, setDatePickerConfig] = useState({
         visible: false,
         field: '', // 'startDate' or 'endDate'
@@ -61,6 +67,13 @@ const CreateTournamentScreen = ({ navigation }) => {
 
     const [imagePickerVisible, setImagePickerVisible] = useState(false);
     const [formatPickerVisible, setFormatPickerVisible] = useState(false);
+    const [sportsPickerVisible, setSportsPickerVisible] = useState(false);
+
+    React.useEffect(() => {
+        if (!sportsList || sportsList.length === 0) {
+            dispatch(fetchSports());
+        }
+    }, []);
 
     const FORMAT_OPTIONS = [
         { label: 'Group', value: 'group' },
@@ -144,9 +157,39 @@ const CreateTournamentScreen = ({ navigation }) => {
         }
     };
 
+    const resetForm = () => {
+        setFormData({
+            name: '',
+            description: '',
+            location: '',
+            sports: { id: '', name: '' },
+            format: 'group',
+            startDate: '',
+            endDate: '',
+            entryFee: '',
+            discount: '0',
+            categories: [{
+                name: '',
+                entryFee: '',
+                minPlayers: '',
+                maxPlayers: '',
+                minAge: '',
+                maxAge: '',
+                discount: '0',
+                status: 'upcoming',
+                isActive: true
+            }],
+            sponsors: [{ name: '', logo: '' }],
+            organizers: [{ name: '', contact: '' }],
+            image: null,
+            oversPerInnings: '',
+            winnerPrize: '',
+        });
+    };
+
     const handleSubmit = async () => {
-        if (!formData.name || !formData.location || !formData.startDate || !formData.endDate) {
-            Alert.alert('Required Fields', 'Please fill in the tournament name, location, and dates.');
+        if (!formData.name || !formData.location || !formData.startDate || !formData.endDate || !formData.sports.id) {
+            Alert.alert('Required Fields', 'Please fill in the tournament name, location, dates, and select a sport.');
             return;
         }
 
@@ -183,9 +226,14 @@ const CreateTournamentScreen = ({ navigation }) => {
 
             const resultAction = await dispatch(createTournament(payload));
             if (createTournament.fulfilled.match(resultAction)) {
-                Alert.alert('Success', 'Tournament created successfully!', [
-                    { text: 'OK', onPress: () => navigation.goBack() }
-                ]);
+                // Success!
+                setShowSuccessModal(true);
+                resetForm();
+                // Optionally navigate after a delay
+                setTimeout(() => {
+                    setShowSuccessModal(false);
+                    navigation.goBack();
+                }, 2000);
             } else {
                 Alert.alert('Error', resultAction.payload || 'Failed to create tournament');
             }
@@ -258,6 +306,17 @@ const CreateTournamentScreen = ({ navigation }) => {
                 {/* Basic Info */}
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Basic Information</Text>
+                    {renderInput(
+                        'Select Sport',
+                        formData.sports.name,
+                        null,
+                        'Which sport is this for?',
+                        <Trophy size={18} color={COLORS.primary} />,
+                        'default',
+                        false,
+                        true,
+                        () => setSportsPickerVisible(true)
+                    )}
                     {renderInput(STRINGS.TOURNAMENT_NAME, formData.name, (val) => handleChange('name', val), 'Enter event name', <Award size={18} color={COLORS.primary} />)}
                     {renderInput(
                         'Tournament Format',
@@ -559,6 +618,62 @@ const CreateTournamentScreen = ({ navigation }) => {
                 </TouchableOpacity>
             </Modal>
 
+            {/* Sports Picker Modal */}
+            <Modal
+                transparent
+                visible={sportsPickerVisible}
+                animationType="fade"
+                onRequestClose={() => setSportsPickerVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setSportsPickerVisible(false)}
+                >
+                    <View style={styles.imagePickerMenu}>
+                        <Text style={styles.modalTitle}>Select Sport</Text>
+                        <ScrollView style={{ maxHeight: 300 }} showsVerticalScrollIndicator={false}>
+                            {sportsList && sportsList.map((sport) => (
+                                <TouchableOpacity
+                                    key={sport.id}
+                                    style={styles.menuItem}
+                                    onPress={() => {
+                                        handleChange('sports', { id: sport.id, name: sport.name });
+                                        setSportsPickerVisible(false);
+                                    }}
+                                >
+                                    <Image source={{ uri: sport.imageUrl }} style={{ width: 24, height: 24, marginRight: 10, resizeMode: 'contain' }} />
+                                    <Text style={[
+                                        styles.menuText,
+                                        formData.sports.id === sport.id && { color: COLORS.primary, fontWeight: '700' }
+                                    ]}>
+                                        {sport.name}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                        <TouchableOpacity style={styles.cancelItem} onPress={() => setSportsPickerVisible(false)}>
+                            <Text style={styles.cancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
+
+            {/* Success Modal */}
+            <Modal
+                transparent
+                visible={showSuccessModal}
+                animationType="fade"
+            >
+                <View style={[styles.modalOverlay, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <View style={styles.successContainer}>
+                        <CheckCircle2 size={60} color={COLORS.success} />
+                        <Text style={styles.successTitle}>Tournament Created!</Text>
+                        <Text style={styles.successSubtitle}>Your event has been published successfully.</Text>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Date Picker Component */}
             <DatePicker
                 modal
@@ -797,6 +912,33 @@ const styles = StyleSheet.create({
         color: COLORS.white,
         fontSize: 18,
         fontWeight: '700',
+    },
+
+    // Success Modal
+    successContainer: {
+        backgroundColor: COLORS.surface,
+        width: '80%',
+        padding: SPACING['32'],
+        borderRadius: 24,
+        alignItems: 'center',
+        shadowColor: COLORS.black,
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.2,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    successTitle: {
+        fontSize: 20,
+        fontWeight: '800',
+        color: COLORS.text,
+        marginTop: SPACING['16'],
+        marginBottom: 8,
+    },
+    successSubtitle: {
+        fontSize: 14,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        lineHeight: 20,
     },
 });
 

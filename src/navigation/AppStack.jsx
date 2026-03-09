@@ -12,6 +12,8 @@ import {
   NotificationScreen,
   RegistrationScreen,
   BookingsScreen,
+  AllTournamentsScreen,
+  RegistrationConfirmationScreen
 } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
 import { Home, User, Ticket, Plus } from 'lucide-react-native';
@@ -153,6 +155,14 @@ const AppStack = () => {
       <Stack.Screen
         name={SCREEN_NAMES.REGISTRATION}
         component={RegistrationScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.ALL_TOURNAMENTS}
+        component={AllTournamentsScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.REGISTRATION_CONFIRMATION}
+        component={RegistrationConfirmationScreen}
       />
     </Stack.Navigator>
   );

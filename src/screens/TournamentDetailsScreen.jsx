@@ -130,7 +130,14 @@ const TournamentDetailsScreen = ({ route }) => {
                             <Zap size={20} color={COLORS.accent} />
                             <View>
                                 <Text style={styles.gridLabel}>{STRINGS.ENTRY_FEE}</Text>
-                                <Text style={styles.gridValue}>₹{(Number(tournament.entryFee) || 0).toFixed(2)}</Text>
+                                {tournament.discount > 0 ? (
+                                    <View style={styles.priceRow}>
+                                        <Text style={styles.originalPrice}>₹{(Number(tournament.entryFee) || 0).toFixed(2)}</Text>
+                                        <Text style={styles.gridValue}>₹{(Number(tournament.entryFee) * (1 - tournament.discount / 100)).toFixed(2)}</Text>
+                                    </View>
+                                ) : (
+                                    <Text style={styles.gridValue}>₹{(Number(tournament.entryFee) || 0).toFixed(2)}</Text>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -155,7 +162,14 @@ const TournamentDetailsScreen = ({ route }) => {
                                 <View key={cat.id} style={styles.categoryItem}>
                                     <View style={styles.categoryHeader}>
                                         <Text style={styles.categoryName}>{cat.name}</Text>
-                                        <Text style={styles.categoryFee}>₹{(Number(cat.entryFee) || 0).toFixed(2)}</Text>
+                                        {cat.discount > 0 ? (
+                                            <View style={styles.priceRow}>
+                                                <Text style={styles.originalCatPrice}>₹{(Number(cat.entryFee) || 0).toFixed(2)}</Text>
+                                                <Text style={styles.categoryFee}>₹{(Number(cat.entryFee) * (1 - cat.discount / 100)).toFixed(2)}</Text>
+                                            </View>
+                                        ) : (
+                                            <Text style={styles.categoryFee}>₹{(Number(cat.entryFee) || 0).toFixed(2)}</Text>
+                                        )}
                                     </View>
 
                                     <View style={styles.catSpecs}>
@@ -363,6 +377,23 @@ const styles = StyleSheet.create({
         fontSize: 13,
         color: COLORS.text,
         fontWeight: '700',
+    },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    originalPrice: {
+        fontSize: 11,
+        color: COLORS.textTertiary,
+        textDecorationLine: 'line-through',
+        fontWeight: '500',
+    },
+    originalCatPrice: {
+        fontSize: 12,
+        color: COLORS.textTertiary,
+        textDecorationLine: 'line-through',
+        fontWeight: '500',
     },
     sectionHeader: {
         flexDirection: 'row',

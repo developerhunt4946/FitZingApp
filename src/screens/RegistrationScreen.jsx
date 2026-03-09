@@ -37,24 +37,21 @@ const RegistrationScreen = ({ route }) => {
 
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [teamName, setTeamName] = useState('');
-    const [players, setPlayers] = useState([{ name: '', email: '', mobile: '', dob: '' }]);
+    const [players, setPlayers] = useState([{ firstName: '', lastName: '', email: '', phone: '' }]);
 
     const currentCategory = useMemo(() => {
         return categories.find(cat => cat.id === selectedCategory);
     }, [selectedCategory, categories]);
 
     const calculateTotal = useMemo(() => {
-        if (!currentCategory) return { entryFee: 0, discount: 0, gst: 0, total: 0 };
+        if (!currentCategory) return { entryFee: 0, discount: 0, total: 0 };
         const entryFee = currentCategory.entryFee || 0;
         const discountPercent = currentCategory.discount || 0;
         const discountAmount = entryFee * (discountPercent / 100);
-        const discountedFee = entryFee - discountAmount;
-        const gst = discountedFee * 0.18;
-        const total = discountedFee + gst;
+        const total = entryFee - discountAmount;
         return {
             entryFee: entryFee,
             discount: discountAmount,
-            gst: gst,
             total: total
         };
     }, [currentCategory]);
@@ -64,7 +61,7 @@ const RegistrationScreen = ({ route }) => {
             Alert.alert('Limit Reached', `Maximum ${currentCategory.maxPlayers} players allowed for this category.`);
             return;
         }
-        setPlayers([...players, { name: '', email: '', mobile: '', dob: '' }]);
+        setPlayers([...players, { firstName: '', lastName: '', email: '', phone: '' }]);
     };
 
     const handleRemovePlayer = (index) => {
@@ -94,8 +91,12 @@ const RegistrationScreen = ({ route }) => {
             Alert.alert('Error', `Minimum ${currentCategory.minPlayers} players required.`);
             return false;
         }
+        if (players.length > (currentCategory?.maxPlayers || 99)) {
+            Alert.alert('Error', `Maximum ${currentCategory.maxPlayers} players allowed.`);
+            return false;
+        }
         for (let i = 0; i < players.length; i++) {
-            if (!players[i].name || !players[i].email || !players[i].mobile || !players[i].dob) {
+            if (!players[i].firstName || !players[i].lastName || !players[i].email || !players[i].phone) {
                 Alert.alert('Error', `Please fill all details for Player ${i + 1}.`);
                 return false;
             }
@@ -105,14 +106,15 @@ const RegistrationScreen = ({ route }) => {
 
     const handlePayNow = () => {
         if (validateForm()) {
-            console.log('Processing Payment for:', {
+            navigation.navigate(SCREEN_NAMES.REGISTRATION_CONFIRMATION, {
                 tournamentId,
-                category: currentCategory.name,
+                categoryId: selectedCategory,
+                categoryName: currentCategory.name,
                 teamName,
                 players,
-                amount: calculateTotal.total
+                total: calculateTotal.total,
+                breakup: calculateTotal
             });
-            Alert.alert('Payment Initialized', `Amount: ₹${(Number(calculateTotal.total) || 0).toFixed(2)}\nTeam: ${teamName}`);
         }
     };
 
@@ -164,11 +166,23 @@ const RegistrationScreen = ({ route }) => {
                                             <CheckCircle2 size={18} color={COLORS.primary} />
                                         )}
                                     </View>
+                                    {cat.discount > 0 && (
+                                        <View style={styles.discountBadge}>
+                                            <Text style={styles.discountText}>{cat.discount}% OFF</Text>
+                                        </View>
+                                    )}
                                     <View style={styles.catConstraintRow}>
                                         <Text style={styles.catConstraintText}>Age: {cat.minAge}-{cat.maxAge} years</Text>
                                         <Text style={styles.catConstraintText}>Players: {cat.minPlayers}-{cat.maxPlayers}</Text>
                                     </View>
-                                    <Text style={styles.categoryFeeText}>₹{(Number(cat?.entryFee) || 0).toFixed(2)}</Text>
+                                    {cat.discount > 0 ? (
+                                        <View style={styles.priceRow}>
+                                            <Text style={styles.originalPrice}>₹{(Number(cat?.entryFee) || 0).toFixed(2)}</Text>
+                                            <Text style={styles.categoryFeeText}>₹{(Number(cat?.entryFee) * (1 - cat.discount / 100)).toFixed(2)}</Text>
+                                        </View>
+                                    ) : (
+                                        <Text style={styles.categoryFeeText}>₹{(Number(cat?.entryFee) || 0).toFixed(2)}</Text>
+                                    )}
                                 </TouchableOpacity>
                             ))}
                         </View>
@@ -213,13 +227,26 @@ const RegistrationScreen = ({ route }) => {
                                     )}
                                 </View>
 
-                                <AppInput
-                                    label="Full Name"
-                                    placeholder="Enter player name"
-                                    value={player.name}
-                                    onChangeText={(val) => handlePlayerChange(index, 'name', val)}
-                                    leftIcon={<User size={18} color={COLORS.primary} />}
-                                />
+                                <View style={styles.playerRow}>
+                                    <View style={{ flex: 1, marginRight: 8 }}>
+                                        <AppInput
+                                            label="First Name"
+                                            placeholder="First Name"
+                                            value={player.firstName}
+                                            onChangeText={(val) => handlePlayerChange(index, 'firstName', val)}
+                                            leftIcon={<User size={18} color={COLORS.primary} />}
+                                        />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <AppInput
+                                            label="Last Name"
+                                            placeholder="Last Name"
+                                            value={player.lastName}
+                                            onChangeText={(val) => handlePlayerChange(index, 'lastName', val)}
+                                            leftIcon={<User size={18} color={COLORS.primary} />}
+                                        />
+                                    </View>
+                                </View>
 
                                 <AppInput
                                     label="Email Address"
@@ -233,16 +260,10 @@ const RegistrationScreen = ({ route }) => {
                                 <AppInput
                                     label="Mobile Number"
                                     placeholder="Enter mobile number"
-                                    value={player.mobile}
+                                    value={player.phone}
                                     keyboardType="phone-pad"
-                                    onChangeText={(val) => handlePlayerChange(index, 'mobile', val)}
+                                    onChangeText={(val) => handlePlayerChange(index, 'phone', val)}
                                     leftIcon={<Phone size={18} color={COLORS.primary} />}
-                                />
-
-                                <DatePickerInput
-                                    label="Date of Birth"
-                                    value={player.dob}
-                                    onChange={(val) => handlePlayerChange(index, 'dob', val)}
                                 />
                             </View>
                         ))}
@@ -269,12 +290,8 @@ const RegistrationScreen = ({ route }) => {
                                 <Text style={styles.feeValue}>₹{(Number(calculateTotal?.entryFee) || 0).toFixed(2)}</Text>
                             </View>
                             <View style={styles.feeRow}>
-                                <Text style={styles.feeLabel}>Discount</Text>
+                                <Text style={styles.feeLabel}>Discount Deduction</Text>
                                 <Text style={[styles.feeValue, { color: COLORS.success }]}>- ₹{(Number(calculateTotal?.discount) || 0).toFixed(2)}</Text>
-                            </View>
-                            <View style={styles.feeRow}>
-                                <Text style={styles.feeLabel}>GST (18%)</Text>
-                                <Text style={styles.feeValue}>₹{(Number(calculateTotal?.gst) || 0).toFixed(2)}</Text>
                             </View>
                             <View style={styles.divider} />
                             <View style={styles.feeRow}>
@@ -402,6 +419,31 @@ const styles = StyleSheet.create({
         fontWeight: '900',
         color: COLORS.primary,
     },
+    priceRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    originalPrice: {
+        fontSize: 12,
+        color: COLORS.textTertiary,
+        textDecorationLine: 'line-through',
+        fontWeight: '600',
+    },
+    discountBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: COLORS.success,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    discountText: {
+        color: COLORS.white,
+        fontSize: 9,
+        fontWeight: '800',
+    },
     playerCard: {
         backgroundColor: COLORS.surface,
         borderRadius: 20,
@@ -442,6 +484,10 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: COLORS.text,
         flex: 1,
+    },
+    playerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     deleteBtn: {
         padding: 6,

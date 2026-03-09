@@ -18,6 +18,7 @@ import { COLORS, SPACING, FONTS } from '../theme';
 import { Sidebar, TournamentList } from '../components';
 import { Bell, User, Trophy, Zap, ChevronRight } from 'lucide-react-native';
 import { fetchTournaments } from '../redux/slices/tournamentSlice';
+import { fetchSports } from '../redux/slices/sportsSlice';
 import STRINGS from '../constants/strings';
 import SCREEN_NAMES from '../constants/screenNames';
 
@@ -77,6 +78,7 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const { user } = useSelector(state => state.auth);
   const { tournaments, loading, error } = useSelector(state => state.tournament);
+  const { sports, loading: sportsLoading } = useSelector(state => state.sports);
   const { unreadCount } = useSelector(state => state.notifications);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeDot, setActiveDot] = useState(0);
@@ -113,6 +115,7 @@ const HomeScreen = () => {
       useNativeDriver: true,
     }).start();
     dispatch(fetchTournaments());
+    dispatch(fetchSports());
   }, []);
 
   // Auto-scroll banner every 3s
@@ -216,6 +219,29 @@ const HomeScreen = () => {
             </View>
           </View>
 
+          {/* ── Sports Categories ────────────────────────── */}
+          <View style={styles.sportsSection}>
+            <FlatList
+              data={sports}
+              keyExtractor={item => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.sportsList}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.sportItem} activeOpacity={0.7}>
+                  <View style={styles.sportIconBg}>
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.sportIcon}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={styles.sportName}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+
           {/* ── Quick Stats ─────────────────────────────── */}
           {/* <View style={styles.statsRow}>
             {QUICK_STATS.map((stat) => {
@@ -238,7 +264,10 @@ const HomeScreen = () => {
           {/* ── All Tournaments ───────────────────────────── */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{STRINGS.EXCLUSIVE_TOURNAMENTS}</Text>
-            <TouchableOpacity activeOpacity={0.7}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(SCREEN_NAMES.ALL_TOURNAMENTS)}
+            >
               <View style={styles.seeAllRow}>
                 <Text style={styles.seeAll}>{STRINGS.VIEW_ALL}</Text>
                 <ChevronRight size={14} color={COLORS.primary} />
@@ -252,10 +281,29 @@ const HomeScreen = () => {
             error={error}
           />
 
+          {!loading && sortedTournaments.length === 0 && (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconCircle}>
+                <Trophy size={40} color={COLORS.primary} opacity={0.5} />
+              </View>
+              <Text style={styles.emptyTitle}>Events are coming! 🏆</Text>
+              <Text style={styles.emptySubtitle}>Get ready to compete. New tournaments will appear here soon.</Text>
+              <TouchableOpacity
+                style={styles.refreshBtn}
+                onPress={() => dispatch(fetchTournaments())}
+              >
+                <Text style={styles.refreshBtnText}>Refresh</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* ── Upcoming Events Placeholder ─────────────── */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{STRINGS.UPCOMING_EVENTS}</Text>
-            <TouchableOpacity activeOpacity={0.7}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPress={() => navigation.navigate(SCREEN_NAMES.ALL_TOURNAMENTS)}
+            >
               <View style={styles.seeAllRow}>
                 <Text style={styles.seeAll}>{STRINGS.VIEW_ALL}</Text>
                 <ChevronRight size={14} color={COLORS.primary} />
@@ -427,6 +475,88 @@ const styles = StyleSheet.create({
     width: 18,
     backgroundColor: COLORS.primary,
     borderRadius: 3,
+  },
+
+  // ── Sports Categories ──
+  sportsSection: {
+    marginTop: SPACING['20'],
+  },
+  sportsList: {
+    paddingHorizontal: SPACING['16'],
+    gap: 10,
+  },
+  sportItem: {
+    alignItems: 'center',
+    width: 60,
+  },
+  sportIconBg: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 8,
+  },
+  sportIcon: {
+    width: 32,
+    height: 32,
+    resizeMode: 'contain',
+  },
+  sportName: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: COLORS.text,
+    textAlign: 'center',
+  },
+
+  // ── Empty State ──
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 40,
+    marginTop: 10,
+  },
+  emptyIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+  },
+  refreshBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: COLORS.primary,
+    borderRadius: 20,
+  },
+  refreshBtnText: {
+    color: COLORS.white,
+    fontWeight: '700',
+    fontSize: 14,
   },
 
   // ── Stats ──

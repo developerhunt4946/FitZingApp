@@ -59,3 +59,15 @@ export const deleteTournament = async (id) => {
         throw error.response?.data || error;
     }
 };
+
+// ==============================
+// Register Team
+// ==============================
+export const registerTeam = async (tournamentId, categoryId, payload) => {
+    try {
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/register`, payload);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};

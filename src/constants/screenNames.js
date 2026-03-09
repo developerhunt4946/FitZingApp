@@ -11,6 +11,7 @@ const SCREEN_NAMES = {
     // Tournament
     TOURNAMENT_DETAILS: 'TournamentDetails',
     CREATE_TOURNAMENT: 'CreateTournament',
+    ALL_TOURNAMENTS: 'AllTournaments',
 
     // Stack Wrappers
     AUTH_STACK: 'AuthStack',
@@ -18,6 +19,7 @@ const SCREEN_NAMES = {
 
     NOTIFICATION: 'Notification',
     REGISTRATION: 'Registration',
+    REGISTRATION_CONFIRMATION: 'RegistrationConfirmation',
     BOOKINGS: 'Bookings',
 
 };
