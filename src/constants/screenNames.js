@@ -21,7 +21,10 @@ const SCREEN_NAMES = {
     REGISTRATION: 'Registration',
     REGISTRATION_CONFIRMATION: 'RegistrationConfirmation',
     BOOKINGS: 'Bookings',
-
+    CATEGORY: 'Category',
+    REGISTERED_TEAMS: 'RegisteredTeams',
+    ROUNDS: 'Rounds',
+    GROUPS: 'Groups',
 };
 
 export default SCREEN_NAMES;

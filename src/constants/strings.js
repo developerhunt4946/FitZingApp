@@ -88,6 +88,17 @@ const STRINGS = {
     BOOKINGS: 'Bookings',
     BOOKINGS_LIVE_SOON: 'Bookings will be live soon!',
     JOIN_LIVE_EVENTS: 'Till then, join live events and showcase your skills.',
+    VIEW_TEAMS: 'View Teams',
+    SHOW_TEAMS: 'Show Teams',
+    VIEW_ROUNDS: 'View Rounds',
+    REGISTERED_TEAMS: 'Registered Teams',
+    TEAM_DETAILS: 'Team Details',
+    PLAYERS: 'Players',
+    ROUNDS: 'Rounds',
+    GENERATE_ROUNDS: 'Generate Rounds',
+    GROUPS: 'Groups',
+    CREATE_GROUPS: 'Create Groups',
+    DELETE_GROUP: 'Delete Group',
 };
 
 export default STRINGS;

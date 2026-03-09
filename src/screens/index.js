@@ -9,6 +9,10 @@ import CreateTournamentScreen from './CreateTournamentScreen';
 import ProfileScreen from './ProfileScreen';
 import AllTournamentsScreen from './AllTournamentsScreen';
 import RegistrationConfirmationScreen from './RegistrationConfirmationScreen';
+import CategoryScreen from './CategoryScreen';
+import RegisteredTeamsScreen from './RegisteredTeamsScreen';
+import RoundsScreen from './RoundsScreen';
+import GroupsScreen from './GroupsScreen';
 
 export {
     HomeScreen,
@@ -20,4 +24,8 @@ export {
     BookingsScreen,
     AllTournamentsScreen,
     RegistrationConfirmationScreen,
+    CategoryScreen,
+    RegisteredTeamsScreen,
+    RoundsScreen,
+    GroupsScreen,
 };

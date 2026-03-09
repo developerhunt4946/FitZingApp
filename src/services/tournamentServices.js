@@ -71,3 +71,61 @@ export const registerTeam = async (tournamentId, categoryId, payload) => {
         throw error.response?.data || error;
     }
 };
+
+// ==============================
+// Get Registered Teams
+// ==============================
+export const getRegisteredTeams = async (tournamentId, categoryId) => {
+    try {
+        const url = categoryId
+            ? `/tournaments/${tournamentId}/teams?categoryId=${categoryId}`
+            : `/tournaments/${tournamentId}/teams`;
+        const response = await apiClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
+// Generate Fixtures
+// ==============================
+export const generateFixtures = async (tournamentId, categoryId) => {
+    try {
+        console.log(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/generate`)
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/generate`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
+// Group Management
+// ==============================
+export const getGroups = async (tournamentId, categoryId) => {
+    try {
+        const response = await apiClient.get(`/tournaments/${tournamentId}/categories/${categoryId}/groups`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const createGroups = async (tournamentId, categoryId) => {
+    try {
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/groups`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const deleteGroup = async (tournamentId, categoryId, groupId) => {
+    try {
+        const response = await apiClient.delete(`/tournaments/${tournamentId}/categories/${categoryId}/groups/${groupId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};

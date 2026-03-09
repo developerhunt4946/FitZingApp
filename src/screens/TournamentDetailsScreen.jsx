@@ -37,6 +37,9 @@ const TournamentDetailsScreen = ({ route }) => {
     const navigation = useNavigation();
     const { tournamentId } = route.params;
     const { tournaments } = useSelector((state) => state.tournament);
+    const { user } = useSelector((state) => state.auth);
+
+    const isAdmin = user?.role === 'admin' || user?.userRole === 'admin';
 
     // Find tournament in state (or fetch if not there, but let's assume it's in list)
     const tournament = tournaments.find((t) => t.id === tournamentId);
@@ -232,8 +235,19 @@ const TournamentDetailsScreen = ({ route }) => {
 
             {/* Fixed Bottom Footer */}
             <View style={styles.footer}>
-                <TouchableOpacity style={[styles.footerBtn, styles.secondaryBtn]}>
-                    <Text style={styles.secondaryBtnText}>{STRINGS.SHOW_MATCHES}</Text>
+                <TouchableOpacity
+                    style={[styles.footerBtn, styles.secondaryBtn]}
+                    onPress={() => {
+                        if (isAdmin) {
+                            navigation.navigate(SCREEN_NAMES.CATEGORY, { tournamentId: tournament.id });
+                        } else {
+                            // SHOW_MATCHES action (to be implemented or placeholder)
+                        }
+                    }}
+                >
+                    <Text style={styles.secondaryBtnText}>
+                        {isAdmin ? STRINGS.VIEW_TEAMS : STRINGS.SHOW_MATCHES}
+                    </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     style={[styles.footerBtn, styles.primaryBtn]}
