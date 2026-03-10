@@ -16,172 +16,136 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import { Sidebar, TournamentList } from '../components';
-import { Bell, User, Trophy, Zap, ChevronRight } from 'lucide-react-native';
-import { fetchTournaments } from '../redux/slices/tournamentSlice';
+import { Bell, User, Trophy, ChevronRight, Award, Calendar } from 'lucide-react-native';
+import { fetchTournaments, fetchESportsTournaments } from '../redux/slices/tournamentSlice';
 import { fetchSports } from '../redux/slices/sportsSlice';
 import STRINGS from '../constants/strings';
 import SCREEN_NAMES from '../constants/screenNames';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// ─── Dummy Banners ────────────────────────────────────────────────
-const BANNERS = [
-  {
-    id: '1',
-    uri: 'https://images.unsplash.com/photo-1540747913346-19212a4f5b0a?w=800&q=80',
-    title: 'Summer Cricket League',
-    subtitle: 'Register now · Spots filling fast',
-    accent: '#2B47D1',
-  },
-  {
-    id: '2',
-    uri: 'https://images.unsplash.com/photo-1547941126-3d5322b218b0?w=800&q=80',
-    title: 'Badminton Championship',
-    subtitle: 'Open for all skill levels',
-    accent: '#6B3FD4',
-  },
-  {
-    id: '3',
-    uri: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=800&q=80',
-    title: 'Football Super Cup',
-    subtitle: '5-a-side · Starts next week',
-    accent: '#0EA5E9',
-  },
-];
+// ─── eSports Card ─────────────────────────────────────────────────
+const ESportsTournamentCard = ({ item }) => {
+  const navigation = useNavigation();
 
-// ─── Quick Stats ──────────────────────────────────────────────────
-const QUICK_STATS = [
-  { label: STRINGS.EVENTS_JOINED, value: '12', icon: Trophy, color: '#2B47D1' },
-  { label: STRINGS.WINS, value: '7', icon: Zap, color: '#22C55E' },
-  { label: STRINGS.UPCOMING, value: '3', icon: null, color: '#F59E0B' },
-];
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
 
-// ─── Banner Item ──────────────────────────────────────────────────
-const BannerItem = ({ item }) => (
-  <View style={styles.bannerCard}>
-    <Image
-      source={{ uri: item.uri }}
-      style={styles.bannerImage}
-      resizeMode="cover"
-    />
-    {/* Gradient overlay text */}
-    <View style={[styles.bannerOverlay, { backgroundColor: item.accent + 'CC' }]}>
-      <Text style={styles.bannerTitle}>{item.title}</Text>
-      <Text style={styles.bannerSubtitle}>{item.subtitle}</Text>
-    </View>
-  </View>
-);
+  const hasDiscount = Number(item.discount) > 0;
+  const entryFee = Number(item.entryFeePerTeam) || 0;
+  const discountAmt = hasDiscount ? entryFee * (1 - Number(item.discount) / 100) : entryFee;
+
+  return (
+    <TouchableOpacity
+      style={esStyles.card}
+      activeOpacity={0.9}
+      onPress={() => navigation.navigate(SCREEN_NAMES.ESPORTS_TOURNAMENT_DETAILS, { tournamentId: item.id })}
+    >
+      <Image source={{ uri: item.imageURL }} style={esStyles.image} resizeMode="cover" />
+      <View style={esStyles.overlay} />
+
+      <View style={esStyles.tag}>
+        <Award size={10} color={COLORS.white} />
+        <Text style={esStyles.tagText}>eSPORTS</Text>
+      </View>
+
+      {hasDiscount && (
+        <View style={esStyles.discountBadge}>
+          <Text style={esStyles.discountText}>{item.discount}% OFF</Text>
+        </View>
+      )}
+
+      <View style={esStyles.feeBadge}>
+        {hasDiscount ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Text style={esStyles.origFee}>₹{entryFee.toFixed(0)}/team</Text>
+            <Text style={esStyles.feeText}>₹{discountAmt.toFixed(0)}</Text>
+          </View>
+        ) : (
+          <Text style={esStyles.feeText}>₹{entryFee.toFixed(0)}/team</Text>
+        )}
+      </View>
+
+      <View style={esStyles.cardContent}>
+        <Text style={esStyles.name} numberOfLines={1}>{item.name}</Text>
+        <View style={esStyles.infoRow}>
+          <Trophy size={12} color={COLORS.secondary} />
+          <Text style={esStyles.category}>{item.categoryName}</Text>
+        </View>
+        <View style={esStyles.footer}>
+          <View style={esStyles.infoRow}>
+            <Calendar size={12} color={COLORS.primary} />
+            <Text style={esStyles.dateText}>{formatDate(item.date)}</Text>
+          </View>
+          <View style={esStyles.infoBadge}>
+            <User size={11} color={COLORS.white} />
+            <Text style={esStyles.infoText}>{item.playersPerTeams}v{item.playersPerTeams}</Text>
+          </View>
+        </View>
+        <Text style={esStyles.prize}>🏆 Prize Pool: ₹{Number(item.prizePool).toLocaleString('en-IN')}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 // ─── Home Screen ──────────────────────────────────────────────────
 const HomeScreen = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { user } = useSelector(state => state.auth);
-  const { tournaments, loading, error } = useSelector(state => state.tournament);
-  const { sports, loading: sportsLoading } = useSelector(state => state.sports);
+  const { tournaments, loading, error, eSportsTournaments, eSportsLoading } = useSelector(state => state.tournament);
+  const { sports } = useSelector(state => state.sports);
   const { unreadCount } = useSelector(state => state.notifications);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeDot, setActiveDot] = useState(0);
 
-  // Memoized sorted tournaments
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const firstName = user?.first_name || user?.firstName || user?.name || 'Athlete';
+
   const sortedTournaments = React.useMemo(() => {
     if (!tournaments) return [];
     return [...tournaments].sort((a, b) => {
       const statusA = (a.status || 'upcoming').toLowerCase();
       const statusB = (b.status || 'upcoming').toLowerCase();
-
-      // Priority 1: Upcoming status
       if (statusA === 'upcoming' && statusB !== 'upcoming') return -1;
       if (statusA !== 'upcoming' && statusB === 'upcoming') return 1;
-
-      // Priority 2: Start Date (earliest first)
-      const dateA = new Date(a.startDate || 0);
-      const dateB = new Date(b.startDate || 0);
-      return dateA - dateB;
+      return new Date(a.startDate || 0) - new Date(b.startDate || 0);
     });
   }, [tournaments]);
 
-  const bannerRef = useRef(null);
-  const currentIndex = useRef(0);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const firstName = user?.first_name || user?.firstName || user?.name || 'Athlete';
-
-  // Entry fade + fetch tournaments
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
     dispatch(fetchTournaments());
     dispatch(fetchSports());
+    dispatch(fetchESportsTournaments());
   }, []);
-
-  // Auto-scroll banner every 3s
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const next = (currentIndex.current + 1) % BANNERS.length;
-      bannerRef.current?.scrollToIndex({ index: next, animated: true });
-      currentIndex.current = next;
-      setActiveDot(next);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const onBannerViewable = ({ viewableItems }) => {
-    if (viewableItems.length > 0) {
-      const idx = viewableItems[0].index ?? 0;
-      currentIndex.current = idx;
-      setActiveDot(idx);
-    }
-  };
-
-  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-
-      {/* ── Sidebar ── */}
       <Sidebar visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       <Animated.View style={[{ flex: 1 }, { opacity: fadeAnim }]}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
-          {/* ── Header ─────────────────────────────────── */}
+          {/* ── Header ── */}
           <View style={styles.header}>
-            {/* Left: Avatar → opens sidebar */}
-            <TouchableOpacity
-              style={styles.avatarBtn}
-              onPress={() => setSidebarOpen(true)}
-              activeOpacity={0.75}
-            >
+            <TouchableOpacity style={styles.avatarBtn} onPress={() => setSidebarOpen(true)} activeOpacity={0.75}>
               <View style={styles.avatar}>
                 <User size={20} color={COLORS.white} />
               </View>
-              {/* Online dot */}
               <View style={styles.onlineDot} />
             </TouchableOpacity>
 
-            {/* Center: Welcome text */}
             <View style={styles.headerCenter}>
               <Text style={styles.welcomeText}>{STRINGS.WELCOME_BACK}</Text>
               <Text style={styles.userName} numberOfLines={1}>{firstName} 👋</Text>
             </View>
 
-            {/* Right: Notification bell */}
-            <TouchableOpacity
-              style={styles.notifBtn}
-              activeOpacity={0.75}
-              onPress={() => navigation.navigate(SCREEN_NAMES.NOTIFICATION)}
-            >
+            <TouchableOpacity style={styles.notifBtn} activeOpacity={0.75} onPress={() => navigation.navigate(SCREEN_NAMES.NOTIFICATION)}>
               <Bell size={22} color={COLORS.text} />
-              {/* Badge */}
               {unreadCount > 0 && (
                 <View style={styles.notifBadge}>
                   <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -190,37 +154,8 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
 
-          {/* ── Banner Slider ───────────────────────────── */}
-          <View style={styles.bannerSection}>
-            <FlatList
-              ref={bannerRef}
-              data={BANNERS}
-              keyExtractor={item => item.id}
-              horizontal
-              pagingEnabled
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => <BannerItem item={item} />}
-              onViewableItemsChanged={onBannerViewable}
-              viewabilityConfig={viewabilityConfig.current}
-              getItemLayout={(_, index) => ({
-                length: SCREEN_WIDTH - SPACING['32'],
-                offset: (SCREEN_WIDTH - SPACING['32']) * index,
-                index,
-              })}
-            />
-            {/* Dots */}
-            <View style={styles.dotsRow}>
-              {BANNERS.map((_, i) => (
-                <View
-                  key={i}
-                  style={[styles.dot, activeDot === i && styles.dotActive]}
-                />
-              ))}
-            </View>
-          </View>
-
-          {/* ── Sports Categories ────────────────────────── */}
-          <View style={styles.sportsSection}>
+          {/* ── Sports Categories ── */}
+          <View style={[styles.sportsSection, { marginTop: SPACING['16'] }]}>
             <FlatList
               data={sports}
               keyExtractor={item => item.id}
@@ -230,11 +165,7 @@ const HomeScreen = () => {
               renderItem={({ item }) => (
                 <TouchableOpacity style={styles.sportItem} activeOpacity={0.7}>
                   <View style={styles.sportIconBg}>
-                    <Image
-                      source={{ uri: item.imageUrl }}
-                      style={styles.sportIcon}
-                      resizeMode="contain"
-                    />
+                    <Image source={{ uri: item.imageUrl }} style={styles.sportIcon} resizeMode="contain" />
                   </View>
                   <Text style={styles.sportName}>{item.name}</Text>
                 </TouchableOpacity>
@@ -242,32 +173,10 @@ const HomeScreen = () => {
             />
           </View>
 
-          {/* ── Quick Stats ─────────────────────────────── */}
-          {/* <View style={styles.statsRow}>
-            {QUICK_STATS.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <View key={stat.label} style={styles.statCard}>
-                  <View style={[styles.statIconWrap, { backgroundColor: stat.color + '18' }]}>
-                    {Icon
-                      ? <Icon size={16} color={stat.color} />
-                      : <View style={[styles.miniDot, { backgroundColor: stat.color }]} />
-                    }
-                  </View>
-                  <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
-                  <Text style={styles.statLabel}>{stat.label}</Text>
-                </View>
-              );
-            })}
-          </View>
-*/}
-          {/* ── All Tournaments ───────────────────────────── */}
+          {/* ── Physical Tournaments ── */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{STRINGS.EXCLUSIVE_TOURNAMENTS}</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate(SCREEN_NAMES.ALL_TOURNAMENTS)}
-            >
+            <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate(SCREEN_NAMES.ALL_TOURNAMENTS)}>
               <View style={styles.seeAllRow}>
                 <Text style={styles.seeAll}>{STRINGS.VIEW_ALL}</Text>
                 <ChevronRight size={14} color={COLORS.primary} />
@@ -275,11 +184,7 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
 
-          <TournamentList
-            tournaments={sortedTournaments}
-            loading={loading}
-            error={error}
-          />
+          <TournamentList tournaments={sortedTournaments} loading={loading} error={error} />
 
           {!loading && sortedTournaments.length === 0 && (
             <View style={styles.emptyContainer}>
@@ -288,40 +193,43 @@ const HomeScreen = () => {
               </View>
               <Text style={styles.emptyTitle}>Events are coming! 🏆</Text>
               <Text style={styles.emptySubtitle}>Get ready to compete. New tournaments will appear here soon.</Text>
-              <TouchableOpacity
-                style={styles.refreshBtn}
-                onPress={() => dispatch(fetchTournaments())}
-              >
+              <TouchableOpacity style={styles.refreshBtn} onPress={() => dispatch(fetchTournaments())}>
                 <Text style={styles.refreshBtnText}>Refresh</Text>
               </TouchableOpacity>
             </View>
           )}
 
-          {/* ── Upcoming Events Placeholder ─────────────── */}
+          {/* ── eSports Tournaments ── */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>{STRINGS.UPCOMING_EVENTS}</Text>
-            <TouchableOpacity
-              activeOpacity={0.7}
-              onPress={() => navigation.navigate(SCREEN_NAMES.ALL_TOURNAMENTS)}
-            >
-              <View style={styles.seeAllRow}>
-                <Text style={styles.seeAll}>{STRINGS.VIEW_ALL}</Text>
-                <ChevronRight size={14} color={COLORS.primary} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={styles.eSportsBadge}>
+                <Award size={12} color={COLORS.white} />
               </View>
-            </TouchableOpacity>
+              <Text style={styles.sectionTitle}>eSports Tournaments</Text>
+            </View>
           </View>
 
-          {/* Event Cards Placeholder */}
-          {['Cricket League — Round 2', 'Badminton Open Singles', 'Football 5-a-side'].map((ev, i) => (
-            <TouchableOpacity key={i} style={styles.eventCard} activeOpacity={0.8}>
-              <View style={[styles.eventAccent, { backgroundColor: [COLORS.primary, COLORS.secondary, COLORS.accent][i] }]} />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventTitle}>{ev}</Text>
-                <Text style={styles.eventDate}>Mar {10 + i * 3}, 2026 · 9:00 AM</Text>
-              </View>
-              <ChevronRight size={16} color={COLORS.textTertiary} />
-            </TouchableOpacity>
-          ))}
+          {eSportsLoading ? (
+            <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
+              <Text style={{ color: COLORS.textSecondary }}>Loading eSports events...</Text>
+            </View>
+          ) : eSportsTournaments && eSportsTournaments.length > 0 ? (
+            <FlatList
+              data={eSportsTournaments}
+              keyExtractor={item => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: SPACING['16'], gap: SPACING['16'], paddingBottom: SPACING['16'] }}
+              renderItem={({ item }) => <ESportsTournamentCard item={item} />}
+              snapToInterval={280 + SPACING['16']}
+              decelerationRate="fast"
+              snapToAlignment="start"
+            />
+          ) : (
+            <View style={{ height: 100, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
+              <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center' }}>No eSports tournaments yet. Check back soon! 🎮</Text>
+            </View>
+          )}
 
         </ScrollView>
       </Animated.View>
@@ -661,6 +569,146 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     fontWeight: '400',
+  },
+  eSportsBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: COLORS.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
+
+// ─── eSports Card Styles ───────────────────────────────────────────
+const esStyles = StyleSheet.create({
+  card: {
+    width: 280,
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+  },
+  image: {
+    width: '100%',
+    height: 150,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    height: 150,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  tag: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tagText: {
+    color: COLORS.white,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  discountText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  feeBadge: {
+    position: 'absolute',
+    bottom: 160,
+    right: 10,
+    transform: [{ translateY: 160 }],
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  origFee: {
+    color: 'rgba(255,255,255,0.6)',
+    fontSize: 10,
+    fontWeight: '600',
+    textDecorationLine: 'line-through',
+  },
+  feeText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  cardContent: {
+    padding: 14,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.text,
+    marginBottom: 6,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  category: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+    paddingTop: 10,
+    marginBottom: 8,
+  },
+  dateText: {
+    fontSize: 11,
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+  },
+  infoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.secondary,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  infoText: {
+    fontSize: 10,
+    color: COLORS.white,
+    fontWeight: '700',
+  },
+  prize: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 });
 

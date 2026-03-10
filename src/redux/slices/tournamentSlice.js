@@ -1,6 +1,8 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import {
     getAllTournaments,
+    getAllESportsTournaments,
+    getESportsTournamentById,
     createTournament as createTournamentService,
     createESportsTournament as createESportsTournamentService,
     registerTeam as registerTeamService,
@@ -89,6 +91,34 @@ export const fetchTournaments = createAsyncThunk(
     }
 );
 
+export const fetchESportsTournaments = createAsyncThunk(
+    'tournament/fetchAllESports',
+    async (_, { rejectWithValue }) => {
+        try {
+            const data = await getAllESportsTournaments();
+            return data?.data?.tournaments || data?.data || data;
+        } catch (error) {
+            return rejectWithValue(
+                error?.message || 'Failed to fetch eSports tournaments'
+            );
+        }
+    }
+);
+
+export const fetchESportsTournamentById = createAsyncThunk(
+    'tournament/fetchESportsById',
+    async (id, { rejectWithValue }) => {
+        try {
+            const data = await getESportsTournamentById(id);
+            return data?.data?.tournament || data?.data || data;
+        } catch (error) {
+            return rejectWithValue(
+                error?.message || 'Failed to fetch eSports tournament'
+            );
+        }
+    }
+);
+
 export const createTournament = createAsyncThunk(
     'tournament/create',
     async (payload, { rejectWithValue }) => {
@@ -135,8 +165,11 @@ const tournamentSlice = createSlice({
     name: 'tournament',
     initialState: {
         tournaments: [],
+        eSportsTournaments: [],
+        selectedESportsTournament: null,
         registeredTeams: [],
         loading: false,
+        eSportsLoading: false,
         teamsLoading: false,
         groups: [],
         groupsLoading: false,
@@ -159,6 +192,32 @@ const tournamentSlice = createSlice({
             })
             .addCase(fetchTournaments.rejected, (state, action) => {
                 state.loading = false;
+                state.error = action.payload;
+            })
+            // Fetch eSports Tournaments
+            .addCase(fetchESportsTournaments.pending, (state) => {
+                state.eSportsLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchESportsTournaments.fulfilled, (state, action) => {
+                state.eSportsLoading = false;
+                state.eSportsTournaments = action.payload;
+            })
+            .addCase(fetchESportsTournaments.rejected, (state, action) => {
+                state.eSportsLoading = false;
+                state.error = action.payload;
+            })
+            // Fetch eSports Tournament By ID
+            .addCase(fetchESportsTournamentById.pending, (state) => {
+                state.eSportsLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchESportsTournamentById.fulfilled, (state, action) => {
+                state.eSportsLoading = false;
+                state.selectedESportsTournament = action.payload;
+            })
+            .addCase(fetchESportsTournamentById.rejected, (state, action) => {
+                state.eSportsLoading = false;
                 state.error = action.payload;
             })
             // Create Tournament

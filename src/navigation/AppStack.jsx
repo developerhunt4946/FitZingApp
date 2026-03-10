@@ -9,6 +9,8 @@ import {
   TournamentDetailsScreen,
   CreateTournamentScreen,
   CreateESportsTournamentScreen,
+  ESportsTournamentDetailsScreen,
+  ESportsRegistrationScreen,
   ProfileScreen,
   NotificationScreen,
   RegistrationScreen,
@@ -188,6 +190,14 @@ const AppStack = () => {
       <Stack.Screen
         name={SCREEN_NAMES.CREATE_ESPORTS_TOURNAMENT}
         component={CreateESportsTournamentScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.ESPORTS_TOURNAMENT_DETAILS}
+        component={ESportsTournamentDetailsScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.ESPORTS_REGISTRATION}
+        component={ESportsRegistrationScreen}
       />
     </Stack.Navigator>
   );

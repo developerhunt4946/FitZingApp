@@ -37,6 +37,30 @@ export const createTournament = async (payload) => {
 };
 
 // ==============================
+// Get All eSports Tournaments
+// ==============================
+export const getAllESportsTournaments = async () => {
+    try {
+        const response = await apiClient.get('/esports/tournaments');
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
+// Get eSports Tournament By ID
+// ==============================
+export const getESportsTournamentById = async (id) => {
+    try {
+        const response = await apiClient.get(`/esports/tournaments/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
 // Create eSports Tournament
 // ==============================
 export const createESportsTournament = async (payload) => {
