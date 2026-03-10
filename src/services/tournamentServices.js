@@ -73,6 +73,18 @@ export const createESportsTournament = async (payload) => {
 };
 
 // ==============================
+// Register eSports Team
+// ==============================
+export const registerESportsTeam = async (payload) => {
+    try {
+        const response = await apiClient.post('/esports/register', payload);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
 // Update Tournament
 // ==============================
 export const updateTournament = async (id, payload) => {

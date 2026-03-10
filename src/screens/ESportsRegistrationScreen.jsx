@@ -26,6 +26,7 @@ import {
     ChevronDown,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import { registerESportsTeam } from '../services/tournamentServices';
 
 // Determine which Game ID label to use based on category
 const getGameIdLabel = (categoryName) => {
@@ -116,8 +117,19 @@ const ESportsRegistrationScreen = ({ route }) => {
     const handleSubmit = async () => {
         if (!validate()) return;
         setLoading(true);
-        // Simulating API call — wire to real endpoint later
-        setTimeout(() => {
+
+        try {
+            const payload = {
+                tournamentId: tournament.id,
+                teamName: teamName.trim(),
+                whatsappNumber: whatsapp.trim(),
+                players: players.map(p => ({
+                    name: p.name.trim(),
+                    gameId: p.gameId.trim()
+                }))
+            };
+
+            await registerESportsTeam(payload);
             setLoading(false);
             setShowSuccess(true);
             setTimeout(() => {
@@ -125,7 +137,11 @@ const ESportsRegistrationScreen = ({ route }) => {
                 navigation.goBack();
                 navigation.goBack();
             }, 2200);
-        }, 1200);
+        } catch (error) {
+            setLoading(false);
+            const errorMessage = error.message || 'Failed to register team. Please try again.';
+            Alert.alert('Registration Failed', errorMessage);
+        }
     };
 
     return (
