@@ -28,6 +28,7 @@ const SCREEN_NAMES = {
     REGISTERED_TEAMS: 'RegisteredTeams',
     ROUNDS: 'Rounds',
     GROUPS: 'Groups',
+    MATCHES: 'Matches',
 };
 
 export default SCREEN_NAMES;

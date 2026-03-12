@@ -48,17 +48,6 @@ const CategoryScreen = () => {
                         </Text>
                     </View>
                 </View>
-                <TouchableOpacity
-                    style={styles.groupsIconBtn}
-                    onPress={() => navigation.navigate(SCREEN_NAMES.GROUPS, {
-                        tournamentId,
-                        categoryId: category.id,
-                        categoryName: category.name
-                    })}
-                >
-                    <Users size={22} color={COLORS.primary} />
-                    <Text style={styles.groupsIconText}>Groups</Text>
-                </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
@@ -200,21 +189,6 @@ const styles = StyleSheet.create({
         fontSize: 14,
         fontWeight: '700',
         color: COLORS.primary,
-    },
-    groupsIconBtn: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: COLORS.primary + '10',
-        padding: 8,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: COLORS.primary + '20',
-    },
-    groupsIconText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: COLORS.primary,
-        marginTop: 2,
     },
     divider: {
         height: 1,

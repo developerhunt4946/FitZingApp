@@ -17,7 +17,7 @@ import { User, Phone, MapPin, CheckCircle, ChevronLeft, Camera, LogOut } from 'l
 import { COLORS, FONTS, SPACING } from '../theme';
 import STRINGS from '../constants/strings';
 import { updateProfile, clearError } from '../redux/slices/authSlice';
-import { AppInput, DatePickerInput } from '../components';
+import { AppInput, DatePickerInput, AppAlert } from '../components';
 
 const ProfileScreen = ({ navigation }) => {
     const dispatch = useDispatch();
@@ -31,6 +31,25 @@ const ProfileScreen = ({ navigation }) => {
         city: user?.city || '',
         state: user?.state || '',
     });
+
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+    });
+
+    const showAlert = (title, message, type = 'info', onConfirm = null) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
 
     useEffect(() => {
         if (user) {
@@ -47,7 +66,7 @@ const ProfileScreen = ({ navigation }) => {
 
     useEffect(() => {
         if (error) {
-            Alert.alert(STRINGS.UPDATE_FAILED, error);
+            showAlert(STRINGS.UPDATE_FAILED, error, 'error');
             dispatch(clearError());
         }
     }, [error]);
@@ -60,7 +79,7 @@ const ProfileScreen = ({ navigation }) => {
         try {
             const resultAction = await dispatch(updateProfile(formData));
             if (updateProfile.fulfilled.match(resultAction)) {
-                Alert.alert(STRINGS.SUCCESS || 'Success', STRINGS.PROFILE_UPDATED);
+                showAlert(STRINGS.SUCCESS || 'Success', STRINGS.PROFILE_UPDATED, 'success');
             }
         } catch (err) {
             console.error('Save profile error:', err);
@@ -187,6 +206,17 @@ const ProfileScreen = ({ navigation }) => {
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
+
+            {/* Custom Alert */}
+            <AppAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.type === 'confirm'}
+            />
         </View>
     );
 };

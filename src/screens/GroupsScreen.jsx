@@ -11,14 +11,18 @@ import {
     LayoutAnimation,
     Platform,
     UIManager,
+    Modal,
+    TextInput,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, ChevronDown, ChevronUp, Trash2, Users, Plus, Info } from 'lucide-react-native';
+import { ArrowLeft, ChevronDown, ChevronUp, Trash2, Users, Plus, Info, X } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import STRINGS from '../constants/strings';
 import { fetchGroups, createGroups, deleteGroup } from '../redux/slices/tournamentSlice';
+import { AppAlert } from '../components';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
     UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -28,10 +32,23 @@ const GroupsScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const dispatch = useDispatch();
-    const { tournamentId, categoryId, categoryName } = route.params;
+    const { tournamentId, categoryId, categoryName, roundNo, roundId } = route.params;
 
     const { groups, groupsLoading, loading, error } = useSelector((state) => state.tournament);
     const [expandedGroups, setExpandedGroups] = useState({});
+
+    const [isCreateModalVisible, setCreateModalVisible] = useState(false);
+    const [numGroups, setNumGroups] = useState('2');
+    const [maxTeams, setMaxTeams] = useState('4');
+
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+    });
 
     useEffect(() => {
         dispatch(fetchGroups({ tournamentId, categoryId }));
@@ -45,39 +62,66 @@ const GroupsScreen = () => {
         }));
     };
 
+    const handleOpenCreateModal = () => {
+        setCreateModalVisible(true);
+    };
+
+    const showAlert = (title, message, type = 'info', onConfirm = null) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
+
     const handleCreateGroups = async () => {
+        if (!roundId) {
+            showAlert('Error', 'Round ID is missing. Please go back and try again.', 'error');
+            return;
+        }
         try {
-            await dispatch(createGroups({ tournamentId, categoryId })).unwrap();
-            Alert.alert('Success', 'Groups created successfully.');
+            await dispatch(createGroups({
+                tournamentId,
+                categoryId,
+                roundId,
+                numberOfGroups: parseInt(numGroups) || 2,
+                teamsPerGroup: parseInt(maxTeams) || 4,
+            })).unwrap();
+            setCreateModalVisible(false);
+            showAlert('Success', 'Groups created successfully.', 'success');
+            dispatch(fetchGroups({ tournamentId, categoryId }));
         } catch (err) {
-            Alert.alert('Error', err || 'Failed to create groups');
+            showAlert('Error', typeof err === 'string' ? err : (err?.message || 'Failed to create groups'), 'error');
         }
     };
 
     const handleDeleteGroup = (groupId) => {
-        Alert.alert(
+        showAlert(
             'Delete Group',
             'Are you sure you want to delete this group?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await dispatch(deleteGroup({ tournamentId, categoryId, groupId })).unwrap();
-                            Alert.alert('Success', 'Group deleted successfully.');
-                        } catch (err) {
-                            Alert.alert('Error', err || 'Failed to delete group');
-                        }
-                    },
-                },
-            ]
+            'confirm',
+            async () => {
+                try {
+                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                    await dispatch(deleteGroup({ tournamentId, categoryId, groupId })).unwrap();
+                    showAlert('Success', 'Group deleted successfully.', 'success');
+                    dispatch(fetchGroups({ tournamentId, categoryId }));
+                } catch (err) {
+                    showAlert('Error', err || 'Failed to delete group', 'error');
+                }
+            }
         );
     };
 
-    const renderGroupItem = ({ item }) => {
+    const getGroupName = (index) => {
+        return String.fromCharCode(65 + index); // 0 -> A, 1 -> B...
+    };
+
+    const renderGroupItem = ({ item, index }) => {
         const isExpanded = expandedGroups[item.groupId];
+        const groupDisplayName = item.name || `Group ${getGroupName(index)}`;
         return (
             <View style={styles.groupCard}>
                 <TouchableOpacity
@@ -87,10 +131,12 @@ const GroupsScreen = () => {
                 >
                     <View style={styles.groupTitleRow}>
                         <View style={styles.groupBadge}>
-                            <Text style={styles.groupBadgeText}>{item.groupId}</Text>
+                            <Text style={styles.groupBadgeText}>{getGroupName(index)}</Text>
                         </View>
-                        <Text style={styles.groupTitle}>Group {item.groupId}</Text>
-                        <Text style={styles.teamCount}>({item.teams?.length || 0} Teams)</Text>
+                        <View>
+                            <Text style={styles.groupTitle}>{groupDisplayName}</Text>
+                            <Text style={styles.teamCount}>{item.teams?.length || 0} Teams</Text>
+                        </View>
                     </View>
                     <View style={styles.headerActions}>
                         <TouchableOpacity
@@ -134,9 +180,11 @@ const GroupsScreen = () => {
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle}>{STRINGS.GROUPS}</Text>
-                    <Text style={styles.headerSubtitle} numberOfLines={1}>{categoryName}</Text>
+                    <Text style={styles.headerSubtitle} numberOfLines={1}>Round {roundNo} - {categoryName}</Text>
                 </View>
-                <View style={{ width: 40 }} />
+                <TouchableOpacity style={styles.addBtn} onPress={handleOpenCreateModal}>
+                    <Plus size={24} color={COLORS.primary} />
+                </TouchableOpacity>
             </View>
 
             {groupsLoading ? (
@@ -146,7 +194,7 @@ const GroupsScreen = () => {
             ) : groups?.length > 0 ? (
                 <FlatList
                     data={groups}
-                    keyExtractor={(item) => item.groupId}
+                    keyExtractor={(item, index) => item.id || item.groupId || index.toString()}
                     renderItem={renderGroupItem}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
@@ -163,12 +211,12 @@ const GroupsScreen = () => {
                     </View>
                     <Text style={styles.emptyTitle}>No Groups Created</Text>
                     <Text style={styles.emptySubtitle}>
-                        You can automatically assign registered teams into balanced groups.
+                        Create groups to assign teams for Round {roundNo}.
                     </Text>
 
                     <TouchableOpacity
                         style={styles.createBtn}
-                        onPress={handleCreateGroups}
+                        onPress={handleOpenCreateModal}
                         disabled={loading}
                     >
                         {loading ? (
@@ -176,12 +224,76 @@ const GroupsScreen = () => {
                         ) : (
                             <>
                                 <Plus size={20} color={COLORS.white} />
-                                <Text style={styles.createBtnText}>{STRINGS.CREATE_GROUPS}</Text>
+                                <Text style={styles.createBtnText}>Create Groups</Text>
                             </>
                         )}
                     </TouchableOpacity>
                 </View>
             )}
+
+            {/* Create Groups Modal */}
+            <Modal
+                visible={isCreateModalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setCreateModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>Create Groups</Text>
+                            <TouchableOpacity onPress={() => setCreateModalVisible(false)}>
+                                <X size={24} color={COLORS.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+                        <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+                            <Text style={styles.label}>Number of Groups</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={numGroups}
+                                onChangeText={setNumGroups}
+                                keyboardType="numeric"
+                                placeholder="e.g. 2"
+                            />
+
+                            <View style={{ height: 20 }} />
+
+                            <Text style={styles.label}>Max Teams per Group</Text>
+                            <TextInput
+                                style={styles.input}
+                                value={maxTeams}
+                                onChangeText={setMaxTeams}
+                                keyboardType="numeric"
+                                placeholder="e.g. 4"
+                            />
+
+                            <View style={styles.infoBox}>
+                                <Info size={16} color={COLORS.textTertiary} />
+                                <Text style={styles.infoText}>
+                                    Teams will be randomly assigned based on these parameters for Round {roundNo}.
+                                </Text>
+                            </View>
+                        </ScrollView>
+                        <TouchableOpacity style={styles.submitBtn} onPress={handleCreateGroups}>
+                            {loading ? <ActivityIndicator color={COLORS.white} /> : (
+                                <Text style={styles.submitBtnText}>Generate Groups</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Custom Alert */}
+            <AppAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.type === 'confirm'}
+                confirmText={alertConfig.type === 'confirm' ? 'Delete' : 'OK'}
+            />
         </SafeAreaView>
     );
 };
@@ -218,6 +330,9 @@ const styles = StyleSheet.create({
         color: COLORS.textTertiary,
         marginTop: 2,
     },
+    addBtn: {
+        padding: 4,
+    },
     listContent: {
         padding: SPACING['16'],
     },
@@ -237,46 +352,50 @@ const styles = StyleSheet.create({
     },
     groupCard: {
         backgroundColor: COLORS.surface,
-        borderRadius: 16,
-        marginBottom: 12,
+        borderRadius: 20,
+        marginBottom: 16,
         borderWidth: 1,
         borderColor: COLORS.borderLight,
         overflow: 'hidden',
-        elevation: 2,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
     },
     groupHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: SPACING['16'],
+        padding: SPACING['20'],
         backgroundColor: COLORS.surface,
     },
     groupTitleRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 15,
     },
     groupBadge: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 44,
+        height: 44,
+        borderRadius: 14,
         backgroundColor: COLORS.primary,
         justifyContent: 'center',
         alignItems: 'center',
+        elevation: 2,
     },
     groupBadgeText: {
-        color: COLORS.white,
-        fontWeight: '800',
-        fontSize: 16,
+        color: COLORS.surface,
     },
     groupTitle: {
-        fontSize: 17,
-        fontWeight: '700',
+        fontSize: 18,
+        fontWeight: '800',
         color: COLORS.text,
     },
     teamCount: {
         fontSize: 13,
         color: COLORS.textTertiary,
+        marginTop: 2,
     },
     headerActions: {
         flexDirection: 'row',
@@ -287,22 +406,22 @@ const styles = StyleSheet.create({
         padding: 4,
     },
     teamsList: {
-        paddingHorizontal: SPACING['16'],
-        paddingBottom: SPACING['16'],
+        paddingHorizontal: SPACING['20'],
+        paddingBottom: SPACING['20'],
         backgroundColor: COLORS.surface,
     },
     teamItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 10,
+        paddingVertical: 12,
         borderTopWidth: 1,
         borderTopColor: COLORS.borderLight,
         gap: 12,
     },
     teamIndex: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
+        width: 28,
+        height: 28,
+        borderRadius: 10,
         backgroundColor: COLORS.background,
         justifyContent: 'center',
         alignItems: 'center',
@@ -310,13 +429,13 @@ const styles = StyleSheet.create({
         borderColor: COLORS.border,
     },
     teamIndexText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '700',
-        color: COLORS.textTertiary,
+        color: COLORS.textSecondary,
     },
     teamName: {
         fontSize: 15,
-        color: COLORS.textSecondary,
+        color: COLORS.text,
         fontWeight: '600',
     },
     emptyContainer: {
@@ -356,12 +475,81 @@ const styles = StyleSheet.create({
         borderRadius: 14,
         gap: 10,
         elevation: 4,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
     },
     createBtnText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    modalContent: {
+        backgroundColor: COLORS.surface,
+        borderRadius: 24,
+        padding: 24,
+        width: '100%',
+        maxWidth: 400,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 24,
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: COLORS.text,
+    },
+    modalBody: {
+        marginBottom: 24,
+    },
+    label: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: COLORS.text,
+        marginBottom: 8,
+    },
+    input: {
+        backgroundColor: COLORS.background,
+        borderWidth: 1.5,
+        borderColor: COLORS.border,
+        borderRadius: 12,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        fontSize: 16,
+        color: COLORS.text,
+    },
+    infoBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.primary + '05',
+        padding: 12,
+        borderRadius: 10,
+        marginTop: 20,
+        gap: 8,
+        borderWidth: 1,
+        borderColor: COLORS.primary + '10',
+    },
+    infoText: {
+        fontSize: 11,
+        color: COLORS.textTertiary,
+        flex: 1,
+    },
+    submitBtn: {
+        backgroundColor: COLORS.primary,
+        height: 52,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 2,
+    },
+    submitBtnText: {
         color: COLORS.white,
         fontSize: 16,
         fontWeight: '700',

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -27,6 +27,15 @@ import {
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { registerESportsTeam } from '../services/tournamentServices';
+import { createPaymentOrder, verifyPayment } from '../services/paymentServices';
+import { AppAlert } from '../components';
+import {
+  CFEnvironment,
+  CFSession,
+  CFThemeBuilder,
+  CFDropCheckoutPayment,
+  CFPaymentGatewayService,
+} from 'react-native-cashfree-pg-sdk';
 
 // Determine which Game ID label to use based on category
 const getGameIdLabel = (categoryName) => {
@@ -75,6 +84,25 @@ const ESportsRegistrationScreen = ({ route }) => {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+    });
+
+    const showAlert = (title, message, type = 'info', onConfirm = null) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
+
     const updatePlayer = (index, field, value) => {
         setPlayers((prev) => {
             const updated = [...prev];
@@ -93,25 +121,78 @@ const ESportsRegistrationScreen = ({ route }) => {
 
     const validate = () => {
         if (!teamName.trim()) {
-            Alert.alert('Team Name Required', 'Please enter your team name.');
+            showAlert('Team Name Required', 'Please enter your team name.', 'error');
             return false;
         }
         if (!whatsapp.trim() || whatsapp.length < 10) {
-            Alert.alert('WhatsApp Number', 'Please enter a valid WhatsApp number.');
+            showAlert('WhatsApp Number', 'Please enter a valid WhatsApp number.', 'error');
             return false;
         }
         for (let i = 0; i < players.length; i++) {
             const p = players[i];
             if (!p.name.trim()) {
-                Alert.alert('Player Info', `Please enter the name for Player ${i + 1}.`);
+                showAlert('Player Info', `Please enter the name for Player ${i + 1}.`, 'error');
                 return false;
             }
             if (!p.gameId.trim()) {
-                Alert.alert('Player Info', `Please enter the ${gameIdLabel} for Player ${i + 1}.`);
+                showAlert('Player Info', `Please enter the ${gameIdLabel} for Player ${i + 1}.`, 'error');
                 return false;
             }
         }
         return true;
+    };
+
+    useEffect(() => {
+        CFPaymentGatewayService.setCallback({
+            onVerify(orderID) {
+                console.log('payment verified callback', orderID);
+                handlePaymentVerify(orderID);
+            },
+            onError(error, orderID) {
+                console.log('payment error callback', error, orderID);
+                setLoading(false);
+                showAlert('Payment Failed', error?.message || 'Transaction failed or was cancelled.', 'error');
+            },
+        });
+
+        return () => {
+            CFPaymentGatewayService.removeCallback();
+        };
+    }, []);
+
+    const handlePaymentVerify = async (orderId) => {
+        try {
+            const verifyRes = await verifyPayment(orderId);
+            // Cashfree backend returns paymentStatus as 'SUCCESS' generally
+            if (verifyRes?.paymentStatus === 'SUCCESS' || verifyRes?.payment_status === 'SUCCESS' || verifyRes?.status === 'SUCCESS') {
+                // Proceed with eSports Team registration
+                const payload = {
+                    tournamentId: tournament._id,
+                    teamName: teamName.trim(),
+                    whatsappNumber: whatsapp.trim(),
+                    players: players.map(p => ({
+                        name: p.name.trim(),
+                        gameId: p.gameId.trim()
+                    }))
+                };
+
+                await registerESportsTeam(payload);
+                setLoading(false);
+                setShowSuccess(true);
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    navigation.goBack();
+                    navigation.goBack();
+                }, 2200);
+            } else {
+                setLoading(false);
+                showAlert('Payment Pending/Failed', 'Your payment was not successful. Please try again.', 'error');
+            }
+        } catch (error) {
+            console.error('Verify error:', error);
+            setLoading(false);
+            showAlert('Verification Failed', 'Failed to verify payment status. If money was deducted, please contact support.', 'error');
+        }
     };
 
     const handleSubmit = async () => {
@@ -119,28 +200,74 @@ const ESportsRegistrationScreen = ({ route }) => {
         setLoading(true);
 
         try {
-            const payload = {
-                tournamentId: tournament.id,
-                teamName: teamName.trim(),
-                whatsappNumber: whatsapp.trim(),
-                players: players.map(p => ({
-                    name: p.name.trim(),
-                    gameId: p.gameId.trim()
-                }))
+            // Check if tournament is free (no fee)
+            if (discountedFee === 0) {
+                // If it's a free tournament, directly register without Cashfree
+                const payload = {
+                    tournamentId: tournament.id,
+                    teamName: teamName.trim(),
+                    whatsappNumber: whatsapp.trim(),
+                    players: players.map(p => ({
+                        name: p.name.trim(),
+                        gameId: p.gameId.trim()
+                    }))
+                };
+
+                await registerESportsTeam(payload);
+                setLoading(false);
+                setShowSuccess(true);
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    navigation.goBack();
+                    navigation.goBack();
+                }, 2200);
+                return;
+            }
+
+            // 1. Create order
+            const orderPayload = {
+                orderAmount: discountedFee,
+                customerId: 'esports_' + Date.now().toString(),
+                customerName: teamName.trim().substring(0, 50) || 'Team Captain',
+                customerPhone: whatsapp.trim(),
+                customerEmail: 'esports@fitzing.in',
+                orderNote: `ESports Registration for ${tournament?.name || 'Tournament'}`.substring(0, 50)
             };
 
-            await registerESportsTeam(payload);
-            setLoading(false);
-            setShowSuccess(true);
-            setTimeout(() => {
-                setShowSuccess(false);
-                navigation.goBack();
-                navigation.goBack();
-            }, 2200);
+            const orderResponse = await createPaymentOrder(orderPayload);
+            const paymentSessionId = orderResponse?.payment_session_id || orderResponse?.data?.payment_session_id || orderResponse?.session_id;
+            const orderId = orderResponse?.order_id || orderResponse?.data?.order_id || orderResponse?.orderId;
+            
+            if (!paymentSessionId || !orderId) {
+                throw new Error('Invalid response from payment server (missing session ID).');
+            }
+
+            // 2. Open Cashfree session
+            try {
+                const session = new CFSession(paymentSessionId, orderId, CFEnvironment.SANDBOX);
+                const theme = new CFThemeBuilder()
+                    .setNavigationBarBackgroundColor(COLORS.primary)
+                    .setNavigationBarTextColor('#ffffff')
+                    .setButtonBackgroundColor(COLORS.primary)
+                    .setButtonTextColor('#ffffff')
+                    .setPrimaryTextColor(COLORS.text)
+                    .setSecondaryTextColor(COLORS.textSecondary)
+                    .build();
+
+                const dropPayment = new CFDropCheckoutPayment(session, null, theme);
+                CFPaymentGatewayService.doPayment(dropPayment);
+                // Keep loading state true while Webview is opening. The SDK callbacks will handle success/failure.
+            } catch (sdkError) {
+                setLoading(false);
+                showAlert('Payment Error', 'Failed to initialize payment gateway window.', 'error');
+                console.error(sdkError);
+            }
+
         } catch (error) {
             setLoading(false);
-            const errorMessage = error.message || 'Failed to register team. Please try again.';
-            Alert.alert('Registration Failed', errorMessage);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to create payment order.';
+            showAlert('Order Failed', errorMessage, 'error');
+            console.error('createOrder error:', error);
         }
     };
 
@@ -377,18 +504,16 @@ const ESportsRegistrationScreen = ({ route }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Success Modal */}
-            <Modal transparent visible={showSuccess} animationType="fade">
-                <View style={styles.modalOverlay}>
-                    <View style={styles.successBox}>
-                        <CheckCircle2 size={64} color={COLORS.primary} />
-                        <Text style={styles.successTitle}>Team Registered! 🎮</Text>
-                        <Text style={styles.successSub}>
-                            Your team <Text style={{ fontWeight: '800' }}>{teamName}</Text> is now registered for the tournament.
-                        </Text>
-                    </View>
-                </View>
-            </Modal>
+            {/* Custom Alert */}
+            <AppAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.type === 'confirm'}
+            />
         </SafeAreaView>
     );
 };

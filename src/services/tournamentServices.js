@@ -136,12 +136,54 @@ export const getRegisteredTeams = async (tournamentId, categoryId) => {
 };
 
 // ==============================
-// Generate Fixtures
+// Fixtures Management
 // ==============================
-export const generateFixtures = async (tournamentId, categoryId) => {
+export const getFixtures = async (tournamentId, categoryId, roundId) => {
     try {
-        console.log(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/generate`)
-        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/generate`);
+        let url = `/tournaments/${tournamentId}/categories/${categoryId}/fixtures`;
+        if (roundId) {
+            url += `?roundId=${roundId}`;
+        }
+        const response = await apiClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const generateFixtures = async (tournamentId, categoryId, payload) => {
+    try {
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/generate`, payload);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
+// Rounds Management
+// ==============================
+export const getRounds = async (tournamentId, categoryId) => {
+    try {
+        const response = await apiClient.get(`/tournaments/${tournamentId}/categories/${categoryId}/rounds`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const generateRounds = async (tournamentId, categoryId, payload) => {
+    try {
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/rounds/generate`, payload);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+export const updateRoundStatus = async (roundId, payload) => {
+    try {
+        const response = await apiClient.patch(`/tournaments/rounds/${roundId}`, payload);
         return response.data;
     } catch (error) {
         throw error.response?.data || error;
@@ -160,9 +202,9 @@ export const getGroups = async (tournamentId, categoryId) => {
     }
 };
 
-export const createGroups = async (tournamentId, categoryId) => {
+export const createGroups = async (tournamentId, categoryId, payload) => {
     try {
-        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/groups`);
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/groups/generate`, payload);
         return response.data;
     } catch (error) {
         throw error.response?.data || error;

@@ -23,8 +23,8 @@ import STRINGS from '../constants/strings';
 import { createTournament, clearTournamentError } from '../redux/slices/tournamentSlice';
 import { fetchSports } from '../redux/slices/sportsSlice';
 import { uploadToCloudinary } from '../services/cloudinaryService';
-import { CheckCircle2 } from 'lucide-react-native';
 import SCREEN_NAMES from '../constants/screenNames';
+import { AppAlert } from '../components';
 
 const CreateTournamentScreen = ({ navigation }) => {
     const dispatch = useDispatch();
@@ -60,6 +60,25 @@ const CreateTournamentScreen = ({ navigation }) => {
     });
 
     const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+    });
+
+    const showAlert = (title, message, type = 'info', onConfirm = null) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
 
     const [datePickerConfig, setDatePickerConfig] = useState({
         visible: false,
@@ -152,7 +171,7 @@ const CreateTournamentScreen = ({ navigation }) => {
             setImagePickerVisible(false);
             if (response.didCancel) return;
             if (response.errorCode) {
-                Alert.alert('Error', response.errorMessage);
+                showAlert('Error', response.errorMessage, 'error');
                 return;
             }
             if (response.assets && response.assets.length > 0) {
@@ -199,7 +218,7 @@ const CreateTournamentScreen = ({ navigation }) => {
 
     const handleSubmit = async () => {
         if (!formData.name || !formData.location || !formData.startDate || !formData.endDate || !formData.sports.id) {
-            Alert.alert('Required Fields', 'Please fill in the tournament name, location, dates, and select a sport.');
+            showAlert('Required Fields', 'Please fill in the tournament name, location, dates, and select a sport.', 'warning');
             return;
         }
 
@@ -228,7 +247,7 @@ const CreateTournamentScreen = ({ navigation }) => {
                 try {
                     uploadedImageUrl = await uploadToCloudinary(formData.image);
                 } catch (uploadError) {
-                    Alert.alert('Upload Failed', uploadError.message || 'Failed to upload image. Using default image.');
+                    showAlert('Upload Failed', uploadError.message || 'Failed to upload image. Using default image.', 'warning');
                 }
             }
 
@@ -245,10 +264,10 @@ const CreateTournamentScreen = ({ navigation }) => {
                     navigation.goBack();
                 }, 2000);
             } else {
-                Alert.alert('Error', resultAction.payload || 'Failed to create tournament');
+                showAlert('Error', resultAction.payload || 'Failed to create tournament', 'error');
             }
         } catch (error) {
-            Alert.alert('Error', 'An unexpected error occurred');
+            showAlert('Error', 'An unexpected error occurred', 'error');
         }
     };
 
@@ -747,6 +766,17 @@ const CreateTournamentScreen = ({ navigation }) => {
                     </View>
                 </View>
             </Modal>
+
+            {/* Custom Alert */}
+            <AppAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.type === 'confirm'}
+            />
         </SafeAreaView>
     );
 };

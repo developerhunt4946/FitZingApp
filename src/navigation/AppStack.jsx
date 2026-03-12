@@ -20,7 +20,8 @@ import {
   CategoryScreen,
   RegisteredTeamsScreen,
   RoundsScreen,
-  GroupsScreen
+  GroupsScreen,
+  MatchesScreen
 } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
 import { Home, User, Ticket, Plus } from 'lucide-react-native';
@@ -186,6 +187,10 @@ const AppStack = () => {
       <Stack.Screen
         name={SCREEN_NAMES.GROUPS}
         component={GroupsScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.MATCHES}
+        component={MatchesScreen}
       />
       <Stack.Screen
         name={SCREEN_NAMES.CREATE_ESPORTS_TOURNAMENT}

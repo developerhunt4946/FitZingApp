@@ -26,9 +26,8 @@ import {
     Calendar
 } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
-import { AppInput, DatePickerInput } from '../components';
-import SCREEN_NAMES from '../constants/screenNames';
 import STRINGS from '../constants/strings';
+import { AppAlert } from '../components';
 
 const RegistrationScreen = ({ route }) => {
     const navigation = useNavigation();
@@ -38,6 +37,25 @@ const RegistrationScreen = ({ route }) => {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [teamName, setTeamName] = useState('');
     const [players, setPlayers] = useState([{ firstName: '', lastName: '', email: '', phone: '' }]);
+
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+    });
+
+    const showAlert = (title, message, type = 'info', onConfirm = null) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
 
     const currentCategory = useMemo(() => {
         return categories.find(cat => cat.id === selectedCategory);
@@ -58,7 +76,7 @@ const RegistrationScreen = ({ route }) => {
 
     const handleAddPlayer = () => {
         if (currentCategory && players.length >= currentCategory.maxPlayers) {
-            Alert.alert('Limit Reached', `Maximum ${currentCategory.maxPlayers} players allowed for this category.`);
+            showAlert('Limit Reached', `Maximum ${currentCategory.maxPlayers} players allowed for this category.`, 'warning');
             return;
         }
         setPlayers([...players, { firstName: '', lastName: '', email: '', phone: '' }]);
@@ -80,24 +98,24 @@ const RegistrationScreen = ({ route }) => {
 
     const validateForm = () => {
         if (!selectedCategory) {
-            Alert.alert('Error', 'Please select a category.');
+            showAlert('Error', 'Please select a category.', 'error');
             return false;
         }
         if (!teamName.trim()) {
-            Alert.alert('Error', 'Please enter a team name.');
+            showAlert('Error', 'Please enter a team name.', 'error');
             return false;
         }
         if (players.length < (currentCategory?.minPlayers || 1)) {
-            Alert.alert('Error', `Minimum ${currentCategory.minPlayers} players required.`);
+            showAlert('Error', `Minimum ${currentCategory.minPlayers} players required.`, 'error');
             return false;
         }
         if (players.length > (currentCategory?.maxPlayers || 99)) {
-            Alert.alert('Error', `Maximum ${currentCategory.maxPlayers} players allowed.`);
+            showAlert('Error', `Maximum ${currentCategory.maxPlayers} players allowed.`, 'error');
             return false;
         }
         for (let i = 0; i < players.length; i++) {
             if (!players[i].firstName || !players[i].lastName || !players[i].email || !players[i].phone) {
-                Alert.alert('Error', `Please fill all details for Player ${i + 1}.`);
+                showAlert('Error', `Please fill all details for Player ${i + 1}.`, 'error');
                 return false;
             }
         }
@@ -314,6 +332,17 @@ const RegistrationScreen = ({ route }) => {
                     <Text style={styles.payBtnText}>Pay Now ₹{(Number(calculateTotal?.total) || 0).toFixed(2)}</Text>
                 </TouchableOpacity>
             </View>
+
+            {/* Custom Alert */}
+            <AppAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.type === 'confirm'}
+            />
         </View>
     );
 };

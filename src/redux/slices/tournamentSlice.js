@@ -10,7 +10,11 @@ import {
     generateFixtures as generateFixturesService,
     getGroups as getGroupsService,
     createGroups as createGroupsService,
-    deleteGroup as deleteGroupService
+    deleteGroup as deleteGroupService,
+    getRounds as getRoundsService,
+    generateRounds as generateRoundsService,
+    updateRoundStatus as updateRoundStatusService,
+    getFixtures as getFixturesService,
 } from '../../services/tournamentServices';
 
 export const fetchGroups = createAsyncThunk(
@@ -27,9 +31,13 @@ export const fetchGroups = createAsyncThunk(
 
 export const createGroups = createAsyncThunk(
     'tournament/createGroups',
-    async ({ tournamentId, categoryId }, { rejectWithValue }) => {
+    async ({ tournamentId, categoryId, numberOfGroups, teamsPerGroup, roundId }, { rejectWithValue }) => {
         try {
-            const data = await createGroupsService(tournamentId, categoryId);
+            const data = await createGroupsService(tournamentId, categoryId, { 
+                numberOfGroups, 
+                teamsPerGroup, 
+                roundId 
+            });
             return data?.data || data;
         } catch (error) {
             return rejectWithValue(error?.message || 'Failed to create groups');
@@ -51,14 +59,62 @@ export const deleteGroup = createAsyncThunk(
 
 export const generateFixtures = createAsyncThunk(
     'tournament/generateFixtures',
-    async ({ tournamentId, categoryId }, { rejectWithValue }) => {
+    async ({ tournamentId, categoryId, roundNo }, { rejectWithValue }) => {
         try {
-            const data = await generateFixturesService(tournamentId, categoryId);
+            const data = await generateFixturesService(tournamentId, categoryId, { roundNo });
             return data?.data || data;
         } catch (error) {
             return rejectWithValue(
                 error?.message || 'Failed to generate fixtures'
             );
+        }
+    }
+);
+
+export const fetchRounds = createAsyncThunk(
+    'tournament/fetchRounds',
+    async ({ tournamentId, categoryId }, { rejectWithValue }) => {
+        try {
+            const data = await getRoundsService(tournamentId, categoryId);
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to fetch rounds');
+        }
+    }
+);
+
+export const generateRounds = createAsyncThunk(
+    'tournament/generateRounds',
+    async ({ tournamentId, categoryId, mode, groupSize }, { rejectWithValue }) => {
+        try {
+            const data = await generateRoundsService(tournamentId, categoryId, { mode, groupSize });
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to generate rounds');
+        }
+    }
+);
+
+export const updateRoundStatus = createAsyncThunk(
+    'tournament/updateRoundStatus',
+    async ({ roundId, status, name }, { rejectWithValue }) => {
+        try {
+            const data = await updateRoundStatusService(roundId, { status, name });
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to update round status');
+        }
+    }
+);
+
+export const fetchFixtures = createAsyncThunk(
+    'tournament/fetchFixtures',
+    async ({ tournamentId, categoryId, roundId }, { rejectWithValue }) => {
+        try {
+            const data = await getFixturesService(tournamentId, categoryId, roundId);
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to fetch fixtures');
         }
     }
 );
@@ -173,6 +229,10 @@ const tournamentSlice = createSlice({
         teamsLoading: false,
         groups: [],
         groupsLoading: false,
+        rounds: [],
+        roundsLoading: false,
+        fixtures: [],
+        fixturesLoading: false,
         error: null,
     },
     reducers: {
@@ -321,6 +381,56 @@ const tournamentSlice = createSlice({
             })
             .addCase(deleteGroup.rejected, (state, action) => {
                 state.loading = false;
+                state.error = action.payload;
+            })
+            // Rounds
+            .addCase(fetchRounds.pending, (state) => {
+                state.roundsLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchRounds.fulfilled, (state, action) => {
+                state.roundsLoading = false;
+                state.rounds = action.payload;
+            })
+            .addCase(fetchRounds.rejected, (state, action) => {
+                state.roundsLoading = false;
+                state.error = action.payload;
+            })
+            .addCase(generateRounds.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(generateRounds.fulfilled, (state, action) => {
+                state.loading = false;
+                // Typically you'd refetch or add to rounds
+            })
+            .addCase(generateRounds.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            .addCase(updateRoundStatus.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateRoundStatus.fulfilled, (state, action) => {
+                state.loading = false;
+                // Update local round if needed
+            })
+            .addCase(updateRoundStatus.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
+            // Fixtures
+            .addCase(fetchFixtures.pending, (state) => {
+                state.fixturesLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchFixtures.fulfilled, (state, action) => {
+                state.fixturesLoading = false;
+                state.fixtures = action.payload;
+            })
+            .addCase(fetchFixtures.rejected, (state, action) => {
+                state.fixturesLoading = false;
                 state.error = action.payload;
             });
     },

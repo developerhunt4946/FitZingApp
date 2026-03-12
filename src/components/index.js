@@ -1,6 +1,17 @@
-export { default as AppButton } from './AppButton';
-export { default as AppInput } from './AppInput';
-export { default as DatePickerInput } from './DatePickerInput';
-export { default as PasswordInput } from './PasswordInput';
-export { default as Sidebar } from './Sidebar';
-export { default as TournamentList } from './TournamentList';
+import AppButton from './AppButton';
+import AppInput from './AppInput';
+import DatePickerInput from './DatePickerInput';
+import PasswordInput from './PasswordInput';
+import Sidebar from './Sidebar';
+import TournamentList from './TournamentList';
+import AppAlert from './AppAlert';
+
+export {
+    AppButton,
+    AppInput,
+    DatePickerInput,
+    PasswordInput,
+    Sidebar,
+    TournamentList,
+    AppAlert
+};

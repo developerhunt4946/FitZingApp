@@ -15,9 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, SPACING } from '../theme';
 import { signup, clearError } from '../redux/slices/authSlice';
-import { AppInput, AppButton, PasswordInput, DatePickerInput } from '../components';
-import STRINGS from '../constants/strings';
 import SCREEN_NAMES from '../constants/screenNames';
+import { AppAlert } from '../components';
 import {
   User,
   Phone,
@@ -43,6 +42,25 @@ const SignUpScreen = ({ navigation }) => {
   const [lastFocused, setLastFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [mobileFocused, setMobileFocused] = useState(false);
+
+  // Custom Alert State
+  const [alertConfig, setAlertConfig] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    type: 'info',
+    onConfirm: null,
+  });
+
+  const showAlert = (title, message, type = 'info', onConfirm = null) => {
+    setAlertConfig({
+      visible: true,
+      title,
+      message,
+      type,
+      onConfirm,
+    });
+  };
 
   const dispatch = useDispatch();
   const { loading, error } = useSelector(state => state.auth);
@@ -104,7 +122,10 @@ const SignUpScreen = ({ navigation }) => {
         dateOfBirth: form.dateOfBirth,
       };
       await dispatch(signup(payload)).unwrap();
-      Alert.alert('Success', 'Your account has been created successfully!');
+      showAlert('Success', 'Your account has been created successfully!', 'success', () => {
+        setAlertConfig(prev => ({ ...prev, visible: false }));
+        // navigation.navigate(SCREEN_NAMES.LOGIN); // Optional: if you want to navigate on success
+      });
     } catch (err) {
       // error is already set in Redux state
     }
@@ -293,6 +314,23 @@ const SignUpScreen = ({ navigation }) => {
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Custom Alert */}
+      <AppAlert
+        visible={alertConfig.visible}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+        onConfirm={() => {
+          if (alertConfig.onConfirm) {
+            alertConfig.onConfirm();
+          } else {
+            setAlertConfig(prev => ({ ...prev, visible: false }));
+          }
+        }}
+        showCancel={alertConfig.type === 'confirm'}
+      />
     </SafeAreaView>
   );
 };
