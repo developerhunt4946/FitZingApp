@@ -29,6 +29,7 @@ const SCREEN_NAMES = {
     ROUNDS: 'Rounds',
     GROUPS: 'Groups',
     MATCHES: 'Matches',
+    TOSS: 'Toss',
 };
 
 export default SCREEN_NAMES;

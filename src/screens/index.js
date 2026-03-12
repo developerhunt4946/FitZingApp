@@ -17,6 +17,7 @@ import RegisteredTeamsScreen from './RegisteredTeamsScreen';
 import RoundsScreen from './RoundsScreen';
 import GroupsScreen from './GroupsScreen';
 import MatchesScreen from './MatchesScreen';
+import TossScreen from './TossScreen';
 
 export {
     HomeScreen,
@@ -36,4 +37,5 @@ export {
     RoundsScreen,
     GroupsScreen,
     MatchesScreen,
+    TossScreen,
 };
