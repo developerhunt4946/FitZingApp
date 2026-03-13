@@ -111,11 +111,6 @@ const styles = StyleSheet.create({
     },
     primary: {
         backgroundColor: COLORS.primary,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.35,
-        shadowRadius: 10,
-        elevation: 6,
     },
     primaryDisabled: {
         backgroundColor: COLORS.disabled,
