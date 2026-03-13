@@ -9,49 +9,15 @@ import {
     Modal,
     FlatList,
     Platform,
+    ActivityIndicator,
+    Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { 
-    ArrowLeft, 
-    Settings, 
-    User, 
-    ChevronDown, 
-    CheckCircle2,
-    Lock,
-    X,
-    Trophy,
-    LayoutList
-} from 'lucide-react-native';
-import { COLORS, SPACING, FONTS } from '../theme';
-import { AppButton } from '../components';
-
-// Match Constants
-const MAX_OVERS = 5;
-const MAX_BALLS = MAX_OVERS * 6;
-const MAX_WICKETS = 10;
-
-const TEAM_A_PLAYERS = [
-    { id: 'a1', name: 'Ayush Sharma', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a2', name: 'Virat Kohli', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a3', name: 'Rohit Sharma', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a4', name: 'KL Rahul', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a5', name: 'Hardik Pandya', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a6', name: 'Jasprit Bumrah', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a7', name: 'Rishabh Pant', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'a8', name: 'Ravindra Jadeja', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-];
-
-const TEAM_B_PLAYERS = [
-    { id: 'b1', name: 'John Doe', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b2', name: 'Steven Smith', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b3', name: 'David Warner', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b4', name: 'Glenn Maxwell', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b5', name: 'Mitchell Starc', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b6', name: 'Pat Cummins', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b7', name: 'Josh Hazlewood', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-    { id: 'b8', name: 'Adam Zampa', runs: 0, balls: 0, sixes: 0, fours: 0, isOut: false, wickets: 0, overs: 0, ballsBowled: 0, runsConceded: 0 },
-];
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import cricketScoringService from '../services/cricketScoringService';
+import { COLORS, SPACING } from '../theme';
+import { LayoutList, ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Trophy, User, Users, X, RefreshCw, Plus, Minus, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, Trophy as TrophyIcon, User as UserIcon, Users as UsersIcon, X as XIcon, RefreshCw as RefreshCwIcon, Plus as PlusIcon, Minus as MinusIcon, ChevronLeft as ChevronLeftIcon2, ChevronRight as ChevronRightIcon2, Trophy as TrophyIcon2, User as UserIcon2, Users as UsersIcon2, X as XIcon2, RefreshCw as RefreshCwIcon2, Plus as PlusIcon2, Minus as MinusIcon2 } from 'lucide-react-native'
 
 const WICKET_TYPES = [
     'Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket'
@@ -62,9 +28,20 @@ const CricketScoringScreen = () => {
     const route = useRoute();
     const params = route?.params;
 
+    // API Data State
+    const [isLoading, setIsLoading] = useState(true);
+    const [fixture, setFixture] = useState(null);
+    const [activeInningsData, setActiveInningsData] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [overBalls, setOverBalls] = useState([]); // Array of ball objects for current over
+
     // Initial Teams State
-    const [teamAPlayers, setTeamAPlayers] = useState(TEAM_A_PLAYERS);
-    const [teamBPlayers, setTeamBPlayers] = useState(TEAM_B_PLAYERS);
+    const [teamAPlayers, setTeamAPlayers] = useState([]);
+    const [teamBPlayers, setTeamBPlayers] = useState([]);
+
+    // Match Constants (to be updated from API)
+    const [maxOvers, setMaxOvers] = useState(5);
+    const [maxWickets, setMaxWickets] = useState(10);
 
     // Match Lifecycle State
     const [currentInnings, setCurrentInnings] = useState(1);
@@ -72,19 +49,13 @@ const CricketScoringScreen = () => {
     const [targetScore, setTargetScore] = useState(null);
     const [winnerMessage, setWinnerMessage] = useState('');
 
-    // Scoring State (Reset per innings)
+    // Scoring State
     const [score, setScore] = useState(0);
     const [wickets, setWickets] = useState(0);
     const [overs, setOvers] = useState(0);
     const [balls, setBalls] = useState(0);
     const [currentOverBalls, setCurrentOverBalls] = useState([]);
-    const [history, setHistory] = useState([]); // Array of { innings, ball, event, score, wickets, batter, bowler }
-
-    // Selection State
-    const [strikerId, setStrikerId] = useState(null);
-    const [nonStrikerId, setNonStrikerId] = useState(null);
-    const [bowlerId, setBowlerId] = useState(null);
-    const [lastBowlerId, setLastBowlerId] = useState(null);
+    const [history, setHistory] = useState([]);
 
     // Modal States
     const [wicketModalVisible, setWicketModalVisible] = useState(false);
@@ -98,50 +69,179 @@ const CricketScoringScreen = () => {
     const [scorecardModalVisible, setScorecardModalVisible] = useState(false);
     const [scorecardTab, setScorecardTab] = useState(1);
 
-    if (!params || !params.tossData || !params.teamAObj || !params.teamBObj) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
-                        <ArrowLeft size={24} color={COLORS.text} />
-                    </TouchableOpacity>
-                    <Text style={[styles.matchTitle, { marginLeft: 20 }]}>Loading Match Info...</Text>
-                </View>
-            </SafeAreaView>
-        );
-    }
+    // Selection State
+    const [strikerId, setStrikerId] = useState(null);
+    const [nonStrikerId, setNonStrikerId] = useState(null);
+    const [bowlerId, setBowlerId] = useState(null);
+    const [lastBowlerId, setLastBowlerId] = useState(null);
 
-    const { teamAObj, teamBObj, tossData } = params;
+    // Fetch Fixture Details
+    useEffect(() => {
+        fetchMatchData();
+    }, [params?.fixtureId]);
+
+    const fetchMatchData = async () => {
+        if (!params?.fixtureId) return;
+
+        try {
+            setIsLoading(true);
+            const response = await cricketScoringService.getFixtureDetails(params.fixtureId);
+
+            if (response.status === 'success' && response.data) {
+                const { fixture: f, activeInnings } = response.data;
+                setFixture(f);
+                setActiveInningsData(activeInnings);
+
+                // Set Match Constants
+                const oversLimit = f.oversLimit || f.tournament?.oversPerInnings || 5;
+                const wicketsLimit = f.category?.maxPlayers ? f.category.maxPlayers - 1 : 10;
+                setMaxOvers(oversLimit);
+                setMaxWickets(wicketsLimit);
+
+                // Map Players
+                const mapPlayers = (players) => players.map(p => ({
+                    id: p.id,
+                    userId: p.userId,
+                    name: `${p.firstName} ${p.lastName}`.trim(),
+                    runs: 0,
+                    balls: 0,
+                    sixes: 0,
+                    fours: 0,
+                    isOut: false,
+                    wickets: 0,
+                    overs: 0,
+                    ballsBowled: 0,
+                    runsConceded: 0
+                }));
+
+                const tAPlayers = mapPlayers(f.teamAObj?.players || []);
+                const tBPlayers = mapPlayers(f.teamBObj?.players || []);
+                setTeamAPlayers(tAPlayers);
+                setTeamBPlayers(tBPlayers);
+
+                // Initialize Scoring from activeInnings
+                if (activeInnings) {
+                    setCurrentInnings(activeInnings.inningsNo || 1);
+                    setScore(activeInnings.totalRuns || 0);
+                    setWickets(activeInnings.wickets || 0);
+
+                    const oversPlayed = activeInnings.oversPlayed || 0;
+                    setOvers(Math.floor(oversPlayed));
+                    setBalls(Math.round((oversPlayed % 1) * 10)); // Handle cases like 1.2
+                }
+
+                // Set initial active players if not set
+                const battingPlayers = activeInnings?.inningsNo === 2
+                    ? (f.battingTeamId === f.teamA ? tBPlayers : tAPlayers)
+                    : (f.battingTeamId === f.teamA ? tAPlayers : tBPlayers);
+
+                const bowlingPlayers = activeInnings?.inningsNo === 2
+                    ? (f.battingTeamId === f.teamA ? tAPlayers : tBPlayers)
+                    : (f.battingTeamId === f.teamA ? tBPlayers : tAPlayers);
+
+                if (battingPlayers.length >= 2) {
+                    if (!strikerId) setStrikerId(battingPlayers[0].id);
+                    if (!nonStrikerId) setNonStrikerId(battingPlayers[1].id);
+                }
+                if (bowlingPlayers.length >= 1) {
+                    if (!bowlerId) setBowlerId(bowlingPlayers[0].id);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching match data:', error);
+            Alert.alert('Error', 'Failed to fetch latest match data');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Load/Save Local Balls
+    useEffect(() => {
+        const loadLocallyStoredBalls = async () => {
+            if (!params?.fixtureId) return;
+            try {
+                const stored = await AsyncStorage.getItem(`over_balls_${params.fixtureId}`);
+                if (stored) {
+                    setOverBalls(JSON.parse(stored));
+                }
+            } catch (err) {
+                console.error('Error loading local balls:', err);
+            }
+        };
+        loadLocallyStoredBalls();
+    }, [params?.fixtureId]);
+
+    const saveBallsLocally = async (balls) => {
+        if (!params?.fixtureId) return;
+        try {
+            await AsyncStorage.setItem(`over_balls_${params.fixtureId}`, JSON.stringify(balls));
+        } catch (err) {
+            console.error('Error saving local balls:', err);
+        }
+    };
+
+    // Cleanup local storage if match changes or on completion (optional)
+    // We keep it using fixtureId so it stays until synced.
+
+    const { teamAObj, teamBObj } = fixture || {};
+    const tossData = fixture ? {
+        tossWinnerId: fixture.tossWinnerId,
+        tossDecision: fixture.tossDecision,
+        battingTeamId: fixture.battingTeamId,
+        bowlingTeamId: fixture.bowlingTeamId
+    } : null;
 
     // Derived Teams
     const battingTeamPlayers = useMemo(() => {
-        return currentInnings === 1 
+        if (!fixture || !tossData) return [];
+        return currentInnings === 1
             ? (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers)
             : (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers);
-    }, [currentInnings, teamAPlayers, teamBPlayers, tossData, teamAObj]);
-    
+    }, [currentInnings, teamAPlayers, teamBPlayers, tossData, teamAObj, fixture]);
+
     const bowlingTeamPlayers = useMemo(() => {
-        return currentInnings === 1 
+        if (!fixture || !tossData) return [];
+        return currentInnings === 1
             ? (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers)
             : (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers);
-    }, [currentInnings, teamAPlayers, teamBPlayers, tossData, teamAObj]);
+    }, [currentInnings, teamAPlayers, teamBPlayers, tossData, teamAObj, fixture]);
 
     const striker = useMemo(() => battingTeamPlayers.find(p => p.id === strikerId), [battingTeamPlayers, strikerId]);
     const nonStriker = useMemo(() => battingTeamPlayers.find(p => p.id === nonStrikerId), [battingTeamPlayers, nonStrikerId]);
     const bowler = useMemo(() => bowlingTeamPlayers.find(p => p.id === bowlerId), [bowlingTeamPlayers, bowlerId]);
 
+    const filteredPlayersForSelection = useMemo(() => {
+        if (!fixture) return [];
+        if (selectionType === 'bowler') {
+            return bowlingTeamPlayers.filter(p => p.id !== lastBowlerId);
+        }
+        return battingTeamPlayers.filter(p => !p.isOut && p.id !== strikerId && p.id !== nonStrikerId);
+    }, [battingTeamPlayers, bowlingTeamPlayers, selectionType, lastBowlerId, strikerId, nonStrikerId, fixture]);
+
     // Initialize players on load or transition
     useEffect(() => {
+        if (!fixture || battingTeamPlayers.length === 0 || bowlingTeamPlayers.length === 0) return;
         if (!strikerId) setStrikerId(battingTeamPlayers[0].id);
         if (!nonStrikerId) setNonStrikerId(battingTeamPlayers[1].id);
         if (!bowlerId) setBowlerId(bowlingTeamPlayers[0].id);
-    }, [currentInnings]);
+    }, [currentInnings, battingTeamPlayers, bowlingTeamPlayers, fixture]);
+
+    if (isLoading || !fixture) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={[styles.centerContainer, { flex: 1, justifyContent: 'center', alignItems: 'center' }]}>
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                    <Text style={{ marginTop: 10, color: COLORS.textSecondary }}>Loading Match Data...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
 
     const updatePlayerStats = (id, stats, isBattingTeam = true) => {
-        const updater = isBattingTeam 
+        const updater = isBattingTeam
             ? (currentInnings === 1 ? (tossData?.battingTeamId === teamAObj?.id ? setTeamAPlayers : setTeamBPlayers) : (tossData?.battingTeamId === teamAObj?.id ? setTeamBPlayers : setTeamAPlayers))
             : (currentInnings === 1 ? (tossData?.battingTeamId === teamAObj?.id ? setTeamBPlayers : setTeamAPlayers) : (tossData?.battingTeamId === teamAObj?.id ? setTeamAPlayers : setTeamBPlayers));
-        
+
         updater(prev => prev.map(p => p.id === id ? { ...p, ...stats } : p));
     };
 
@@ -160,14 +260,14 @@ const CricketScoringScreen = () => {
     };
 
     const checkMatchEnd = (finalScore, finalWickets, finalOvers, finalBalls) => {
-        const isAllOut = finalWickets >= MAX_WICKETS;
+        const isAllOut = finalWickets >= maxWickets;
         const totalBallsPlayed = (finalOvers * 6) + finalBalls;
-        const isOversDone = totalBallsPlayed >= MAX_BALLS;
+        const isOversDone = totalBallsPlayed >= (maxOvers * 6);
 
         if (currentInnings === 2) {
             if (finalScore >= targetScore) {
                 const bTeamName = tossData?.battingTeamId === teamAObj?.id ? teamBObj?.name : teamAObj?.name;
-                setWinnerMessage(`${bTeamName} won by ${MAX_WICKETS - finalWickets} wickets!`);
+                setWinnerMessage(`${bTeamName} won by ${maxWickets - finalWickets} wickets!`);
                 setIsMatchComplete(true);
                 return true;
             }
@@ -206,7 +306,7 @@ const CricketScoringScreen = () => {
                 setCurrentOverBalls(prev => [...prev, event]);
                 recordHistory(event, newScore, wickets);
                 updatePlayerStats(bowlerId, { runsConceded: (bowler.runsConceded || 0) + runs + 1 }, false);
-                
+
                 if (extraType === 'NB') {
                     updatePlayerStats(strikerId, {
                         runs: (striker.runs || 0) + runs,
@@ -216,13 +316,13 @@ const CricketScoringScreen = () => {
 
                 if (runs % 2 !== 0) switchStriker();
                 checkMatchEnd(newScore, wickets, overs, balls);
-                return; 
+                return;
             } else {
                 event = (runs > 0 ? runs : '') + extraType;
                 newBalls = balls + 1;
-                updatePlayerStats(bowlerId, { 
-                    ballsBowled: (bowler.ballsBowled || 0) + 1, 
-                    runsConceded: (bowler.runsConceded || 0) + runs 
+                updatePlayerStats(bowlerId, {
+                    ballsBowled: (bowler.ballsBowled || 0) + 1,
+                    runsConceded: (bowler.runsConceded || 0) + runs
                 }, false);
                 updatePlayerStats(strikerId, { balls: (striker.balls || 0) + 1 }, true);
                 if (runs % 2 !== 0) switchStriker();
@@ -255,6 +355,29 @@ const CricketScoringScreen = () => {
                 setBalls(newBalls);
             }
         }
+
+        // Add to local over data
+        const ballData = {
+            sequence: overBalls.length,
+            over: overs,
+            ball: isExtra && (extraType === 'Wd' || extraType === 'NB') ? balls : newBalls,
+            strikerId: striker?.userId,
+            nonStrikerId: nonStriker?.userId,
+            bowlerId: bowler?.userId,
+            runs: isExtra ? 0 : runs,
+            isBoundary: runs === 4 || runs === 6,
+            extraType: extraType === 'Wd' ? 'wide' : extraType === 'NB' ? 'no-ball' : extraType === 'Lb' ? 'leg-bye' : extraType === 'B' ? 'bye' : null,
+            extraRuns: isExtra ? (extraType === 'Wd' || extraType === 'NB' ? runs + 1 : runs) : 0,
+            isWicket: false,
+            wicketType: null,
+            dismissedPlayerId: null,
+            caughtById: null,
+            runoutById: null
+        };
+
+        const updatedBalls = [...overBalls, ballData];
+        setOverBalls(updatedBalls);
+        saveBallsLocally(updatedBalls);
     };
 
     const handleWicket = (type) => {
@@ -269,7 +392,7 @@ const CricketScoringScreen = () => {
         setCurrentOverBalls(prev => [...prev, 'W']);
         setWicketModalVisible(false);
         recordHistory('W', score, newWickets);
-        
+
         updatePlayerStats(strikerId, { isOut: true, balls: (striker.balls || 0) + 1 }, true);
         updatePlayerStats(bowlerId, { wickets: (bowler.wickets || 0) + 1, ballsBowled: (bowler.ballsBowled || 0) + 1 }, false);
 
@@ -279,6 +402,29 @@ const CricketScoringScreen = () => {
             setSelectionType('newBatsman');
             setSelectionModalVisible(true);
         }
+
+        // Add to local over data
+        const ballData = {
+            sequence: overBalls.length,
+            over: overs,
+            ball: newBalls,
+            strikerId: striker?.userId,
+            nonStrikerId: nonStriker?.userId,
+            bowlerId: bowler?.userId,
+            runs: 0,
+            isBoundary: false,
+            extraType: null,
+            extraRuns: 0,
+            isWicket: true,
+            wicketType: type.toLowerCase().replace(' ', '-'),
+            dismissedPlayerId: striker?.userId,
+            caughtById: type === 'Caught' ? bowler?.userId : null, // Defaulting caughtBy to bowler if not specified
+            runoutById: null
+        };
+
+        const updatedBalls = [...overBalls, ballData];
+        setOverBalls(updatedBalls);
+        saveBallsLocally(updatedBalls);
     };
 
     const handleRunOut = () => {
@@ -297,6 +443,29 @@ const CricketScoringScreen = () => {
             setSelectionType('striker');
             setSelectionModalVisible(true);
         }
+
+        // Add to local over data
+        const ballData = {
+            sequence: overBalls.length,
+            over: overs,
+            ball: newBalls,
+            strikerId: striker?.userId,
+            nonStrikerId: nonStriker?.userId,
+            bowlerId: bowler?.userId,
+            runs: 0,
+            isBoundary: false,
+            extraType: null,
+            extraRuns: 0,
+            isWicket: true,
+            wicketType: 'run-out',
+            dismissedPlayerId: striker?.userId,
+            caughtById: null,
+            runoutById: null // Would need actual player ID from modal if available
+        };
+
+        const updatedBalls = [...overBalls, ballData];
+        setOverBalls(updatedBalls);
+        saveBallsLocally(updatedBalls);
     };
 
     const handleExtraRunPress = (type) => {
@@ -316,7 +485,7 @@ const CricketScoringScreen = () => {
         setCurrentOverBalls([]);
         switchStriker();
         setOverCompleteModalVisible(false);
-        
+
         const totalBowlerBalls = (bowler.ballsBowled || 0);
         updatePlayerStats(bowlerId, { overs: Math.floor(totalBowlerBalls / 6) }, false);
 
@@ -359,7 +528,7 @@ const CricketScoringScreen = () => {
         else if (selectionType === 'nonStriker') setNonStrikerId(player.id);
         else if (selectionType === 'bowler') setBowlerId(player.id);
         else if (selectionType === 'newBatsman') setStrikerId(player.id);
-        
+
         setSelectionModalVisible(false);
 
         // If it was the last ball of the over and a batsman was just selected (after a wicket), show over complete
@@ -381,17 +550,38 @@ const CricketScoringScreen = () => {
         return false;
     };
 
-    const filteredPlayersForSelection = useMemo(() => {
-        if (selectionType === 'bowler') {
-            return bowlingTeamPlayers.filter(p => p.id !== lastBowlerId);
+    const handleSync = async () => {
+        if (overBalls.length === 0 || isSyncing) return;
+
+        try {
+            setIsSyncing(true);
+            const payload = {
+                battingTeamId: currentInnings === 1 ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id) : (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id),
+                bowlingTeamId: currentInnings === 1 ? (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id) : (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id),
+                balls: overBalls
+            };
+
+            const response = await cricketScoringService.submitBallStats(params.fixtureId, payload);
+            if (response.status === 'success' || response.status === 'true' || response.message?.includes('successfully')) {
+                setOverBalls([]);
+                await AsyncStorage.removeItem(`over_balls_${params.fixtureId}`);
+                Alert.alert('Success', 'Scoring data synced successfully');
+                fetchMatchData(); // Refresh match state from server
+            } else {
+                Alert.alert('Sync Failed', response.message || 'Unknown error occurred');
+            }
+        } catch (err) {
+            console.error('Sync error:', err);
+            Alert.alert('Sync Error', 'Failed to synchronize data with server');
+        } finally {
+            setIsSyncing(false);
         }
-        return battingTeamPlayers.filter(p => !p.isOut && p.id !== strikerId && p.id !== nonStrikerId);
-    }, [battingTeamPlayers, bowlingTeamPlayers, selectionType, lastBowlerId, strikerId, nonStrikerId]);
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="dark-content" backgroundColor={COLORS.surface} />
-            
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerIcon}>
@@ -409,7 +599,7 @@ const CricketScoringScreen = () => {
             <View style={styles.scoreContainer}>
                 <View style={styles.teamScoreInfo}>
                     <Text style={styles.battingTeamName} numberOfLines={1}>
-                        {(currentInnings === 1 
+                        {(currentInnings === 1
                             ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.name : teamBObj?.name)
                             : (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.name : teamAObj?.name)) + " (Inn " + currentInnings + ")"}
                     </Text>
@@ -418,7 +608,7 @@ const CricketScoringScreen = () => {
                         <Text style={styles.overText}>({overs}.{balls === 6 ? 0 : balls})</Text>
                     </View>
                     {targetScore && (
-                        <Text style={styles.targetLabel}>Target: {targetScore} (Need {targetScore - score} in {MAX_BALLS - (overs * 6 + balls)} balls)</Text>
+                        <Text style={styles.targetLabel}>Target: {targetScore} (Need {targetScore - score} in {(maxOvers * 6) - (overs * 6 + balls)} balls)</Text>
                     )}
                 </View>
                 <View style={styles.crrContainer}>
@@ -454,8 +644,8 @@ const CricketScoringScreen = () => {
                     </View>
 
                     {/* Bowler Selection */}
-                    <TouchableOpacity 
-                        style={[styles.bowlerCard, !isSelectionEnabled('bowler') && { opacity: 0.8 }]} 
+                    <TouchableOpacity
+                        style={[styles.bowlerCard, !isSelectionEnabled('bowler') && { opacity: 0.8 }]}
                         onPress={() => isSelectionEnabled('bowler') && openSelectionModal('bowler')}
                         activeOpacity={isSelectionEnabled('bowler') ? 0.7 : 1}
                     >
@@ -470,7 +660,7 @@ const CricketScoringScreen = () => {
                         </View>
                         <View style={styles.bowlerStatsContainer}>
                             <Text style={styles.bowlerStats}>
-                                {bowler?.wickets || 0}-{bowler?.runsConceded || 0} ({bowler?.overs || 0}.{ (bowler?.ballsBowled || 0) % 6 })
+                                {bowler?.wickets || 0}-{bowler?.runsConceded || 0} ({bowler?.overs || 0}.{(bowler?.ballsBowled || 0) % 6})
                             </Text>
                             {isSelectionEnabled('bowler') && <ChevronDown size={16} color={COLORS.textTertiary} />}
                         </View>
@@ -525,12 +715,24 @@ const CricketScoringScreen = () => {
                 </View>
 
                 <View style={styles.actionButtons}>
-                    {balls >= 6 && !isMatchComplete && overs < MAX_OVERS && (
+                    {balls >= 6 && !isMatchComplete && overs < maxOvers && (
                         <AppButton title="COMPLETE OVER" onPress={completeOver} containerStyle={styles.actionBtn} />
                     )}
-                    {currentInnings === 1 && (wickets >= MAX_WICKETS || overs >= MAX_OVERS || (overs === MAX_OVERS - 1 && balls >= 6)) && (
-                        <AppButton 
-                            title="Complete Inn." 
+                    {overBalls.length > 0 && (
+                        <TouchableOpacity 
+                            style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]} 
+                            onPress={handleSync}
+                            disabled={isSyncing}
+                        >
+                            <RefreshCw size={18} color={COLORS.white} />
+                            <Text style={styles.syncButtonText}>
+                                {isSyncing ? "Syncing..." : `Sync ${overBalls.length} Balls`}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+                    {currentInnings === 1 && (wickets >= maxWickets || overs >= maxOvers || (overs === maxOvers - 1 && balls >= 6)) && (
+                        <AppButton
+                            title="Complete Inn."
                             onPress={() => setInningsCompleteModalVisible(true)}
                             variant="primary"
                             containerStyle={[styles.actionBtn, styles.completeInnBtn]}
@@ -558,22 +760,22 @@ const CricketScoringScreen = () => {
 
                     {/* Innings Tabs */}
                     <View style={styles.tabContainer}>
-                        <TouchableOpacity 
-                            style={[styles.tab, scorecardTab === 1 && styles.activeTab]} 
+                        <TouchableOpacity
+                            style={[styles.tab, scorecardTab === 1 && styles.activeTab]}
                             onPress={() => setScorecardTab(1)}
                         >
                             <Text style={[styles.tabText, scorecardTab === 1 && styles.activeTabText]}>Innings 1</Text>
                         </TouchableOpacity>
                         {currentInnings >= 2 && (
-                            <TouchableOpacity 
-                                style={[styles.tab, scorecardTab === 2 && styles.activeTab]} 
+                            <TouchableOpacity
+                                style={[styles.tab, scorecardTab === 2 && styles.activeTab]}
                                 onPress={() => setScorecardTab(2)}
                             >
                                 <Text style={[styles.tabText, scorecardTab === 2 && styles.activeTabText]}>Innings 2</Text>
                             </TouchableOpacity>
                         )}
                     </View>
-                    
+
                     <ScrollView style={{ flex: 1 }}>
                         <View style={styles.scorecardSection}>
                             <Text style={styles.sectionTitle}>BATTING</Text>
@@ -585,17 +787,17 @@ const CricketScoringScreen = () => {
                                 <Text style={styles.colStats}>6s</Text>
                                 <Text style={styles.colSR}>SR</Text>
                             </View>
-                            {(scorecardTab === currentInnings 
-                                ? (scorecardTab === 1 
+                            {(scorecardTab === currentInnings
+                                ? (scorecardTab === 1
                                     ? (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers)
                                     : (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers))
-                                : (scorecardTab === 1 
+                                : (scorecardTab === 1
                                     ? (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers)
                                     : (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers))
                             ).filter(p => p.balls > 0 || (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId))).map((p) => (
                                 <View key={p.id} style={styles.statsTableRow}>
                                     <View style={{ flex: 4 }}>
-                                        <Text style={styles.batterName}>{p.name}{ (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId)) ? '*' : ''}</Text>
+                                        <Text style={styles.batterName}>{p.name}{(scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId)) ? '*' : ''}</Text>
                                         <Text style={styles.batterStatus}>{p.isOut ? 'out' : 'not out'}</Text>
                                     </View>
                                     <Text style={styles.colRuns}>{p.runs}</Text>
@@ -625,7 +827,7 @@ const CricketScoringScreen = () => {
                                 <Text style={styles.colStats}>W</Text>
                                 <Text style={styles.colSR}>Econ</Text>
                             </View>
-                            {(scorecardTab === 1 
+                            {(scorecardTab === 1
                                 ? (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers)
                                 : (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers)
                             ).filter(p => p.ballsBowled > 0 || p.id === bowlerId).map((p) => (
@@ -646,7 +848,7 @@ const CricketScoringScreen = () => {
                             {history.filter(h => h.innings === scorecardTab).map((h, i) => (
                                 <View key={i} style={styles.historyRow}>
                                     <Text style={styles.historyOver}>{h.over}.{h.ball}</Text>
-                                    <Text style={styles.historyDetail}>{h.bowler} to {h.batter}: <Text style={{fontWeight:'900', color: scorecardTab === 1 ? COLORS.primary : COLORS.secondary}}>{h.event}</Text></Text>
+                                    <Text style={styles.historyDetail}>{h.bowler} to {h.batter}: <Text style={{ fontWeight: '900', color: scorecardTab === 1 ? COLORS.primary : COLORS.secondary }}>{h.event}</Text></Text>
                                     <Text style={styles.historyRunning}>{h.score}/{h.wickets}</Text>
                                 </View>
                             ))}
@@ -699,7 +901,7 @@ const CricketScoringScreen = () => {
                             renderItem={({ item }) => (
                                 <TouchableOpacity style={styles.playerSelectItem} onPress={() => selectPlayer(item)}>
                                     <Text style={styles.playerSelectItemText}>{item.name}</Text>
-                                    <CheckCircle2 size={16} color={COLORS.primary} opacity={ (item.id === strikerId || item.id === nonStrikerId || item.id === bowlerId) ? 1 : 0} />
+                                    <CheckCircle2 size={16} color={COLORS.primary} opacity={(item.id === strikerId || item.id === nonStrikerId || item.id === bowlerId) ? 1 : 0} />
                                 </TouchableOpacity>
                             )}
                             ListEmptyComponent={() => (
@@ -871,8 +1073,37 @@ const styles = StyleSheet.create({
     wicketBtn: { backgroundColor: COLORS.error, borderColor: COLORS.error },
     extraBtn: { flex: 1, height: 44, backgroundColor: COLORS.surface, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.warning + '50' },
     extraBtnText: { fontSize: 13, fontWeight: '800', color: COLORS.warning },
-    actionButtons: { flexDirection: 'row', gap: 12, marginVertical: 20, paddingHorizontal: 4, alignItems: 'center' },
+    actionButtons: { flexDirection: 'row', gap: 12, marginVertical: 20, paddingHorizontal: 4, alignItems: 'center', flexWrap: 'wrap' },
     actionBtn: { flex: 1, height: 54 },
+    syncButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.secondary,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 12,
+        elevation: 4,
+        shadowColor: COLORS.secondary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        minWidth: 150,
+        justifyContent: 'center',
+        gap: 8,
+        height: 54,
+    },
+    syncButtonDisabled: {
+        opacity: 0.7,
+        backgroundColor: COLORS.textTertiary,
+    },
+    syncButtonText: {
+        color: COLORS.white,
+        fontWeight: '900',
+        fontSize: 14,
+    },
+    rotatingIcon: {
+        // You would typically use an Animated.Value for rotation, but as a shortcut:
+    },
     completeInnBtn: { backgroundColor: COLORS.secondary, borderColor: COLORS.secondary, elevation: 8 },
     completeInnText: { fontSize: 15, fontWeight: '900' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },

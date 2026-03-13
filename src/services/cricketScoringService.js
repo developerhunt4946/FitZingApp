@@ -30,14 +30,43 @@ const cricketScoringService = {
    * @param {string} tossData.tossDecision - The decision made by the toss winner ('batting' or 'bowling').
    * @param {string} tossData.battingTeamId - The ID of the team that will bat first.
    * @param {string} tossData.bowlingTeamId - The ID of the team that will bowl first.
-   * @returns {Promise} - The API response.
-   */
   submitTossResult: async (fixtureId, tossData) => {
     try {
       const response = await apiClient.put(`/cricket-scoring/${fixtureId}/toss`, tossData);
       return response.data;
     } catch (error) {
       console.error(`Error submitting toss result for fixture ${fixtureId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetches the details of a cricket fixture including the current scoring state.
+   * @param {string} fixtureId - The ID of the fixture.
+   * @returns {Promise} - The API response.
+   */
+  getFixtureDetails: async (fixtureId) => {
+    try {
+      const response = await apiClient.get(`/cricket-scoring/${fixtureId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching fixture details for fixture ${fixtureId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Submits ball-by-ball statistics for a cricket match.
+   * @param {string} fixtureId - The ID of the fixture.
+   * @param {object} payload - The ball statistics payload.
+   * @returns {Promise} - The API response.
+   */
+  submitBallStats: async (fixtureId, payload) => {
+    try {
+      const response = await apiClient.post(`/cricket-scoring/${fixtureId}/ball`, payload);
+      return response.data;
+    } catch (error) {
+      console.error('Error submitting ball stats:', error);
       throw error;
     }
   },

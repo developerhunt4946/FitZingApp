@@ -88,13 +88,29 @@ const MatchesScreen = () => {
             
             // If already in progress, navigate directly
             if (currentStatus === 'inprogress') {
-                navigation.navigate(SCREEN_NAMES.TOSS, {
-                    fixtureId: item.id,
-                    teamA: item.teamA,
-                    teamB: item.teamB,
-                    teamAObj: item.teamAObj,
-                    teamBObj: item.teamBObj,
-                });
+                if (item.tossWinnerId) {
+                    navigation.navigate(SCREEN_NAMES.CRICKET_SCORING, {
+                        fixtureId: item.id,
+                        teamA: item.teamA,
+                        teamB: item.teamB,
+                        teamAObj: item.teamAObj,
+                        teamBObj: item.teamBObj,
+                        tossData: {
+                            tossWinnerId: item.tossWinnerId,
+                            tossDecision: item.tossDecision,
+                            battingTeamId: item.battingTeamId,
+                            bowlingTeamId: item.bowlingTeamId
+                        }
+                    });
+                } else {
+                    navigation.navigate(SCREEN_NAMES.TOSS, {
+                        fixtureId: item.id,
+                        teamA: item.teamA,
+                        teamB: item.teamB,
+                        teamAObj: item.teamAObj,
+                        teamBObj: item.teamBObj,
+                    });
+                }
                 return;
             }
 
