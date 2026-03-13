@@ -9,6 +9,7 @@ import {
     StatusBar,
     ScrollView,
     TextInput,
+    RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,6 +21,7 @@ import {
     fetchFixtures
 } from '../redux/slices/tournamentSlice';
 import SCREEN_NAMES from '../constants/screenNames';
+import cricketScoringService from '../services/cricketScoringService';
 import { AppAlert } from '../components';
 
 const MatchesScreen = () => {
@@ -56,6 +58,10 @@ const MatchesScreen = () => {
         }, [dispatch, tournamentId, categoryId, roundId])
     );
 
+    const onRefresh = useCallback(() => {
+        dispatch(fetchFixtures({ tournamentId, categoryId, roundId }));
+    }, [dispatch, tournamentId, categoryId, roundId]);
+
     const filteredFixtures = useMemo(() => {
         if (!fixtures) return [];
         if (!searchQuery.trim()) return fixtures;
@@ -69,7 +75,7 @@ const MatchesScreen = () => {
         });
     }, [fixtures, searchQuery]);
 
-    const handleStartMatch = (item) => {
+    const handleStartMatch = async (item) => {
         console.log('Starting match for fixture:', item.id, 'Category:', categoryName);
         
         // Find tournament to check sport name
@@ -78,13 +84,45 @@ const MatchesScreen = () => {
         const isCricket = sportName.toLowerCase().includes('cricket');
         
         if (isCricket) {
-            navigation.navigate(SCREEN_NAMES.TOSS, {
-                fixtureId: item.id,
-                teamA: item.teamA,
-                teamB: item.teamB,
-                teamAObj: item.teamAObj,
-                teamBObj: item.teamBObj,
-            });
+            const currentStatus = item.status?.toLowerCase() || 'scheduled';
+            
+            // If already in progress, navigate directly
+            if (currentStatus === 'inprogress') {
+                navigation.navigate(SCREEN_NAMES.TOSS, {
+                    fixtureId: item.id,
+                    teamA: item.teamA,
+                    teamB: item.teamB,
+                    teamAObj: item.teamAObj,
+                    teamBObj: item.teamBObj,
+                });
+                return;
+            }
+
+            // If scheduled or NotStarted, call API
+            if (currentStatus === 'scheduled' || currentStatus === 'notstarted') {
+                try {
+                    await cricketScoringService.updateMatchStatus(item.id, 'inProgress');
+                    
+                    // Show success alert and navigate on confirm
+                    showAlert(
+                        'Success', 
+                        'Match has been started successfully!', 
+                        'success',
+                        () => {
+                            setAlertConfig(prev => ({ ...prev, visible: false }));
+                            navigation.navigate(SCREEN_NAMES.TOSS, {
+                                fixtureId: item.id,
+                                teamA: item.teamA,
+                                teamB: item.teamB,
+                                teamAObj: item.teamAObj,
+                                teamBObj: item.teamBObj,
+                            });
+                        }
+                    );
+                } catch (error) {
+                    showAlert('Error', 'Failed to start the match. Please try again.', 'error');
+                }
+            }
         } else {
             // Future handle for other sports
             showAlert('Coming Soon', 'Scoring for ' + (sportName || categoryName || 'this sport') + ' is coming soon!', 'info');
@@ -276,6 +314,14 @@ const MatchesScreen = () => {
                     renderItem={renderFixtureItem}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={fixturesLoading}
+                            onRefresh={onRefresh}
+                            colors={[COLORS.primary]}
+                            tintColor={COLORS.primary}
+                        />
+                    }
                 />
             ) : (
                 <View style={styles.emptyContainer}>

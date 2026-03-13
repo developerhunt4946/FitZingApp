@@ -14,6 +14,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, CircleDot } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
+import SCREEN_NAMES from '../constants/screenNames';
+import cricketScoringService from '../services/cricketScoringService';
+import { AppAlert } from '../components';
 
 const TossScreen = () => {
     const navigation = useNavigation();
@@ -26,6 +29,26 @@ const TossScreen = () => {
     const [tossWinner, setTossWinner] = useState(null);
     const [battingTeam, setBattingTeam] = useState(null);
     const [bowlingTeam, setBowlingTeam] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Custom Alert State
+    const [alertConfig, setAlertConfig] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        type: 'info',
+        onConfirm: null,
+    });
+
+    const showAlert = (title, message, type = 'info', onConfirm = null) => {
+        setAlertConfig({
+            visible: true,
+            title,
+            message,
+            type,
+            onConfirm,
+        });
+    };
 
     const spin = spinValue.interpolate({
         inputRange: [0, 1],
@@ -193,17 +216,58 @@ const TossScreen = () => {
 
             <View style={styles.footer}>
                 <TouchableOpacity 
-                    style={[styles.submitButton, !isComplete && styles.disabledButton]} 
-                    disabled={!isComplete}
-                    onPress={() => {
-                        // Navigate to scoring screen or handle submission
-                        console.log('Toss Result:', { tossWinner, battingTeam, bowlingTeam });
-                        navigation.goBack();
+                    style={[styles.submitButton, (!isComplete || isLoading) && styles.disabledButton]} 
+                    disabled={!isComplete || isLoading}
+                    onPress={async () => {
+                        const tossData = {
+                            tossWinnerId: tossWinner,
+                            tossDecision: battingTeam === tossWinner ? 'batting' : 'bowling',
+                            battingTeamId: battingTeam,
+                            bowlingTeamId: bowlingTeam
+                        };
+
+                        setIsLoading(true);
+                        try {
+                            await cricketScoringService.submitTossResult(fixtureId, tossData);
+                            
+                            showAlert(
+                                'Success', 
+                                'Toss result submitted. Starting match...', 
+                                'success',
+                                () => {
+                                    setAlertConfig(prev => ({ ...prev, visible: false }));
+                                    navigation.navigate(SCREEN_NAMES.CRICKET_SCORING, {
+                                        fixtureId,
+                                        teamA,
+                                        teamB,
+                                        teamAObj,
+                                        teamBObj,
+                                        tossData
+                                    });
+                                }
+                            );
+                        } catch (error) {
+                            showAlert('Error', 'Failed to submit toss result. Please try again.', 'error');
+                        } finally {
+                            setIsLoading(false);
+                        }
                     }}
                 >
-                    <Text style={styles.submitButtonText}>START MATCH</Text>
+                    <Text style={styles.submitButtonText}>
+                        {isLoading ? 'STARTING...' : 'START MATCH'}
+                    </Text>
                 </TouchableOpacity>
             </View>
+
+            <AppAlert
+                visible={alertConfig.visible}
+                title={alertConfig.title}
+                message={alertConfig.message}
+                type={alertConfig.type}
+                onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.type === 'confirm'}
+            />
         </SafeAreaView>
     );
 };

@@ -18,6 +18,7 @@ import RoundsScreen from './RoundsScreen';
 import GroupsScreen from './GroupsScreen';
 import MatchesScreen from './MatchesScreen';
 import TossScreen from './TossScreen';
+import CricketScoringScreen from './CricketScoringScreen';
 
 export {
     HomeScreen,
@@ -38,4 +39,5 @@ export {
     GroupsScreen,
     MatchesScreen,
     TossScreen,
+    CricketScoringScreen,
 };

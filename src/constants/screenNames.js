@@ -30,6 +30,7 @@ const SCREEN_NAMES = {
     GROUPS: 'Groups',
     MATCHES: 'Matches',
     TOSS: 'Toss',
+    CRICKET_SCORING: 'CricketScoring',
 };
 
 export default SCREEN_NAMES;
