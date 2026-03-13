@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     Platform,
     ActivityIndicator,
     Alert,
+    AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -18,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import cricketScoringService from '../services/cricketScoringService';
 import { COLORS, SPACING } from '../theme';
 import { LayoutList, ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Trophy, User, Users, X, RefreshCw, Plus, Minus, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, Trophy as TrophyIcon, User as UserIcon, Users as UsersIcon, X as XIcon, RefreshCw as RefreshCwIcon, Plus as PlusIcon, Minus as MinusIcon, ChevronLeft as ChevronLeftIcon2, ChevronRight as ChevronRightIcon2, Trophy as TrophyIcon2, User as UserIcon2, Users as UsersIcon2, X as XIcon2, RefreshCw as RefreshCwIcon2, Plus as PlusIcon2, Minus as MinusIcon2 } from 'lucide-react-native'
+import { AppButton } from '../components';
 
 const WICKET_TYPES = [
     'Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket'
@@ -74,12 +76,6 @@ const CricketScoringScreen = () => {
     const [nonStrikerId, setNonStrikerId] = useState(null);
     const [bowlerId, setBowlerId] = useState(null);
     const [lastBowlerId, setLastBowlerId] = useState(null);
-
-    // Fetch Fixture Details
-    useEffect(() => {
-        fetchMatchData();
-    }, [params?.fixtureId]);
-
     const fetchMatchData = async () => {
         if (!params?.fixtureId) return;
 
@@ -101,7 +97,7 @@ const CricketScoringScreen = () => {
                 // Map Players
                 const mapPlayers = (players) => players.map(p => ({
                     id: p.id,
-                    userId: p.userId,
+                    userId: p.userId || p.id,
                     name: `${p.firstName} ${p.lastName}`.trim(),
                     runs: 0,
                     balls: 0,
@@ -127,10 +123,10 @@ const CricketScoringScreen = () => {
 
                     const oversPlayed = activeInnings.oversPlayed || 0;
                     setOvers(Math.floor(oversPlayed));
-                    setBalls(Math.round((oversPlayed % 1) * 10)); // Handle cases like 1.2
+                    setBalls(Math.round((oversPlayed % 1) * 10));
                 }
 
-                // Set initial active players if not set
+                // Seed initial player selections (will be overwritten by fetchScoreboard)
                 const battingPlayers = activeInnings?.inningsNo === 2
                     ? (f.battingTeamId === f.teamA ? tBPlayers : tAPlayers)
                     : (f.battingTeamId === f.teamA ? tAPlayers : tBPlayers);
@@ -140,12 +136,15 @@ const CricketScoringScreen = () => {
                     : (f.battingTeamId === f.teamA ? tBPlayers : tAPlayers);
 
                 if (battingPlayers.length >= 2) {
-                    if (!strikerId) setStrikerId(battingPlayers[0].id);
-                    if (!nonStrikerId) setNonStrikerId(battingPlayers[1].id);
+                    setStrikerId(battingPlayers[0].id);
+                    setNonStrikerId(battingPlayers[1].id);
                 }
                 if (bowlingPlayers.length >= 1) {
-                    if (!bowlerId) setBowlerId(bowlingPlayers[0].id);
+                    setBowlerId(bowlingPlayers[0].id);
                 }
+
+                // Return fresh arrays so the caller can pass them to fetchScoreboard
+                return { tAPlayers, tBPlayers, freshFixture: f };
             }
         } catch (error) {
             console.error('Error fetching match data:', error);
@@ -153,23 +152,308 @@ const CricketScoringScreen = () => {
         } finally {
             setIsLoading(false);
         }
+        return null;
+    };
+    const syncPendingBallsLocally = async (freshFixture, freshTAPlayers, freshTBPlayers) => {
+        if (!params?.fixtureId || !freshFixture) return null;
+        try {
+            const stored = await AsyncStorage.getItem(`over_balls_${params.fixtureId}`);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed && parsed.length > 0) {
+                    const { teamAObj, teamBObj } = freshFixture;
+                    const tossData = {
+                        tossWinnerId: freshFixture.tossWinnerId,
+                        tossDecision: freshFixture.tossDecision,
+                        battingTeamId: freshFixture.battingTeamId,
+                        bowlingTeamId: freshFixture.bowlingTeamId
+                    };
+                    
+                    const inningsNo = activeInningsData?.inningsNo || currentInnings;
+
+                    const payload = {
+                        battingTeamId: inningsNo === 1
+                            ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id)
+                            : (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id),
+                        bowlingTeamId: inningsNo === 1
+                            ? (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id)
+                            : (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id),
+                        balls: parsed,
+                    };
+
+                    setIsSyncing(true);
+                    await cricketScoringService.submitBallStats(params.fixtureId, payload);
+                    await AsyncStorage.removeItem(`over_balls_${params.fixtureId}`);
+                    setOverBalls([]);
+                    setIsSyncing(false);
+                    return true; // Sync was successful
+                }
+            }
+        } catch (err) {
+            console.error('Error auto-syncing pending local balls:', err);
+            setIsSyncing(false);
+            return false; // Sync failed (e.g. offline)
+        }
+        return null; // Nothing to sync
     };
 
-    // Load/Save Local Balls
+    // Fetch Fixture Details -> Sync Offline Balls -> then Fetch Scoreboard
     useEffect(() => {
-        const loadLocallyStoredBalls = async () => {
-            if (!params?.fixtureId) return;
-            try {
-                const stored = await AsyncStorage.getItem(`over_balls_${params.fixtureId}`);
-                if (stored) {
-                    setOverBalls(JSON.parse(stored));
-                }
-            } catch (err) {
-                console.error('Error loading local balls:', err);
+        const initData = async () => {
+            setIsLoading(true);
+            const data = await fetchMatchData();
+            if (data) {
+                const { tAPlayers, tBPlayers, freshFixture } = data;
+                
+                // Attempt to sync any unsaved offline balls before fetching scoreboard
+                const syncResult = await syncPendingBallsLocally(freshFixture, tAPlayers, tBPlayers);
+                
+                // Fetch the definitive state from the server
+                await fetchScoreboard(tAPlayers, tBPlayers, syncResult === false);
             }
+            setIsLoading(false);
         };
-        loadLocallyStoredBalls();
+        initData();
     }, [params?.fixtureId]);
+
+    /**
+     * Fetches the live scoreboard from the DB and syncs player stats,
+     * active striker/non-striker/bowler identities, and current score.
+     *
+     * @param {Array} freshTAPlayers - Team A players array freshly built by fetchMatchData.
+     * @param {Array} freshTBPlayers - Team B players array.
+     * @param {boolean} applyOfflineFallback - If true, unsynced local balls couldn't be uploaded,
+     *                                         so we must manually apply them on top of the fetched score.
+     */
+    const fetchScoreboard = async (freshTAPlayers = null, freshTBPlayers = null, applyOfflineFallback = false) => {
+        if (!params?.fixtureId) return;
+        try {
+            const response = await cricketScoringService.getScoreboard(params.fixtureId);
+            if (response.status !== 'success' || !response.data) return;
+
+            const { innings } = response.data;
+            if (!innings || innings.length === 0) return;
+
+            // Use the last (most recent) innings entry
+            const activeInn = innings[innings.length - 1];
+
+            // --- Base Server Score ---
+            let serverScore = 0;
+            let serverWickets = 0;
+            let serverOvers = 0;
+            let serverBalls = 0;
+            let serverOverBallsDisplay = [];
+
+            const [runsStr, wktsStr] = (activeInn.score || '0/0').split('/');
+            serverScore = parseInt(runsStr, 10) || 0;
+            serverWickets = parseInt(wktsStr, 10) || 0;
+            const oversPlayed = activeInn.oversPlayed || 0;
+            serverOvers = Math.floor(oversPlayed);
+            serverBalls = Math.round((oversPlayed % 1) * 10);
+            setCurrentInnings(activeInn.inningsNo || 1);
+
+            const isMidOver = (oversPlayed % 1) !== 0;
+            if (isMidOver && activeInn.recentBalls && activeInn.recentBalls.length > 0) {
+                // Slicing logic to only get balls from the current unfinished over
+                let legalCount = 0;
+                let sliceStartIndex = activeInn.recentBalls.length - 1;
+
+                for (let i = activeInn.recentBalls.length - 1; i >= 0; i--) {
+                    const b = activeInn.recentBalls[i];
+                    // Wides and No-balls don't count as legal deliveries
+                    if (b.extraType !== 'wide' && b.extraType !== 'no-ball') {
+                        legalCount++;
+                    }
+                    if (legalCount >= serverBalls) {
+                        sliceStartIndex = i;
+                        break;
+                    }
+                }
+
+                // If somehow the backend didn't send enough balls to fulfill serverBalls, we just take what we have
+                if (legalCount < serverBalls) {
+                    sliceStartIndex = 0;
+                }
+
+                const currentOverRecentBalls = activeInn.recentBalls.slice(sliceStartIndex);
+
+                serverOverBallsDisplay = currentOverRecentBalls.map(b => {
+                    if (b.isWicket) return 'W';
+                    if (b.extraType === 'wide') return (b.extraRuns && b.extraRuns > 1) ? `Wd+${b.extraRuns - 1}` : 'Wd';
+                    if (b.extraType === 'no-ball') return (b.extraRuns && b.extraRuns > 1) ? `NB+${b.extraRuns - 1}` : 'NB'; // Usually "extraRuns" for NB is runs from bat + 1 for NB.
+                    if (b.extraType === 'leg-bye') return `${b.extraRuns > 0 ? b.extraRuns : (b.runs > 0 ? b.runs : '')}Lb`;
+                    if (b.extraType === 'bye') return `${b.extraRuns > 0 ? b.extraRuns : (b.runs > 0 ? b.runs : '')}B`;
+                    return String(b.runs);
+                });
+            }
+
+            // --- Apply Offline Fallback if auto-sync failed ---
+             if (applyOfflineFallback) {
+                try {
+                    const stored = await AsyncStorage.getItem(`over_balls_${params.fixtureId}`);
+                    if (stored) {
+                        const parsed = JSON.parse(stored);
+                        setOverBalls(parsed); // Restore state for future syncs
+
+                        let offlineExtraScore = 0;
+                        let offlineExtraWickets = 0;
+                        let offlineExtraBalls = 0;
+                        let offlineBallsDisplay = [];
+
+                        parsed.forEach(b => {
+                            if (b.isWicket) {
+                                offlineExtraWickets += 1;
+                                offlineBallsDisplay.push('W');
+                            } else {
+                                offlineExtraScore += b.runs + (b.extraRuns || 0);
+
+                                if (b.extraType === 'wide') offlineBallsDisplay.push(b.extraRuns > 1 ? `Wd+${b.extraRuns - 1}` : 'Wd');
+                                else if (b.extraType === 'no-ball') offlineBallsDisplay.push(b.runs > 0 ? `NB+${b.runs}` : 'NB');
+                                else if (b.extraType === 'leg-bye') offlineBallsDisplay.push(`${b.runs > 0 ? b.runs : ''}Lb`);
+                                else if (b.extraType === 'bye') offlineBallsDisplay.push(`${b.runs > 0 ? b.runs : ''}B`);
+                                else offlineBallsDisplay.push(String(b.runs));
+                            }
+                            // Wide and No-Ball do not count as legal deliveries
+                            if (b.extraType !== 'wide' && b.extraType !== 'no-ball') {
+                                offlineExtraBalls += 1;
+                            }
+                        });
+
+                        serverScore += offlineExtraScore;
+                        serverWickets += offlineExtraWickets;
+                        serverBalls += offlineExtraBalls;
+                        if (serverBalls >= 6) {
+                            serverOvers += Math.floor(serverBalls / 6);
+                            serverBalls = serverBalls % 6;
+                        }
+                        serverOverBallsDisplay = [...serverOverBallsDisplay, ...offlineBallsDisplay];
+                    }
+                } catch (e) {
+                    console.error("Error applying offline fallback balls to scoreboard", e);
+                }
+            } else {
+               // Normal sync successful, state is 100% accurate from server
+               setOverBalls([]);
+            }
+
+            // --- Set Final Display State ---
+            setScore(serverScore);
+            setWickets(serverWickets);
+            setOvers(serverOvers);
+            setBalls(serverBalls);
+            if (serverBalls === 0 && !isMidOver && serverOverBallsDisplay.length === 0) {
+                 setCurrentOverBalls([]); // Fresh over
+            } else {
+                 setCurrentOverBalls(serverOverBallsDisplay);
+            }
+
+            // --- Build merged player arrays (batting + bowling in one pass each) ---
+            // NOTE: The scoreboard batting[].player.id is the user's UUID.
+            // The fixture's player.userId should also be the user's UUID.
+            // However some API versions return id=userId without a separate userId field,
+            // so we match against BOTH player.userId and player.id as a safe fallback.
+            const matchesPlayer = (apiPlayerId, player) =>
+                apiPlayerId === player.userId || apiPlayerId === player.id;
+
+            const applyStats = (players) => players.map(player => {
+                let updated = { ...player };
+
+                // Batting stats
+                if (activeInn.batting) {
+                    const bat = activeInn.batting.find(b => matchesPlayer(b.player.id, player));
+                    if (bat) {
+                        updated.runs = bat.runs ?? player.runs;
+                        updated.balls = bat.ballsFaced ?? player.balls;
+                        updated.fours = bat.fours ?? player.fours;
+                        updated.sixes = bat.sixes ?? player.sixes;
+                        updated.isOut = bat.dismissal !== 'Not Out';
+                    }
+                }
+
+                // Bowling stats
+                if (activeInn.bowling) {
+                    const bowl = activeInn.bowling.find(b => matchesPlayer(b.player.id, player));
+                    if (bowl) {
+                        const legalBalls = bowl.legalBalls ?? 0;
+                        updated.overs = Math.floor(legalBalls / 6);
+                        updated.ballsBowled = legalBalls;
+                        updated.runsConceded = bowl.runsConceded ?? player.runsConceded;
+                        updated.wickets = bowl.wickets ?? player.wickets;
+                    }
+                }
+
+                return updated;
+            });
+
+            // Helper to find a local player by API player.id (matching userId OR id)
+            const findLocal = (apiPlayerId, allPlayers) =>
+                allPlayers.find(p => matchesPlayer(apiPlayerId, p));
+
+            if (freshTAPlayers && freshTBPlayers) {
+                // Initial load path: use the arrays returned directly from fetchMatchData
+                const mergedA = applyStats(freshTAPlayers);
+                const mergedB = applyStats(freshTBPlayers);
+                setTeamAPlayers(mergedA);
+                setTeamBPlayers(mergedB);
+
+                // Resolve striker / non-striker / bowler from the merged arrays
+                const allPlayers = [...mergedA, ...mergedB];
+
+                if (activeInn.batting) {
+                    const notOut = activeInn.batting.filter(b => b.dismissal === 'Not Out');
+                    if (notOut.length >= 1) {
+                        const s = findLocal(notOut[0].player.id, allPlayers);
+                        if (s) setStrikerId(s.id);
+                    }
+                    if (notOut.length >= 2) {
+                        const ns = findLocal(notOut[1].player.id, allPlayers);
+                        if (ns) setNonStrikerId(ns.id);
+                    }
+                }
+
+                if (activeInn.bowling && activeInn.bowling.length > 0) {
+                    const lastBowl = activeInn.bowling[activeInn.bowling.length - 1];
+                    const b = findLocal(lastBowl.player.id, allPlayers);
+                    if (b) setBowlerId(b.id);
+                }
+            } else {
+                // Post-sync path: use functional updaters to read + update current state
+                setTeamAPlayers(prev => applyStats(prev));
+                setTeamBPlayers(prev => applyStats(prev));
+
+                // For player identities, do a single functional read of both teams
+                setTeamAPlayers(teamA => {
+                        setTeamBPlayers(teamB => {
+                            const allPlayers = [...teamA, ...teamB];
+
+                            if (activeInn.batting) {
+                                const notOut = activeInn.batting.filter(b => b.dismissal === 'Not Out');
+                                if (notOut.length >= 1) {
+                                    const s = findLocal(notOut[0].player.id, allPlayers);
+                                    if (s) setStrikerId(s.id);
+                                }
+                                if (notOut.length >= 2) {
+                                    const ns = findLocal(notOut[1].player.id, allPlayers);
+                                    if (ns) setNonStrikerId(ns.id);
+                                }
+                            }
+
+                            if (activeInn.bowling && activeInn.bowling.length > 0) {
+                                const lastBowl = activeInn.bowling[activeInn.bowling.length - 1];
+                                const b = findLocal(lastBowl.player.id, allPlayers);
+                                if (b) setBowlerId(b.id);
+                            }
+
+                            return teamB; // no mutation
+                        });
+                        return teamA; // no mutation
+                    });
+            }
+        } catch (error) {
+            console.error('Error fetching scoreboard:', error);
+            // Non-fatal: silently fail so scoring can continue
+        }
+    };
 
     const saveBallsLocally = async (balls) => {
         if (!params?.fixtureId) return;
@@ -225,6 +509,100 @@ const CricketScoringScreen = () => {
         if (!nonStrikerId) setNonStrikerId(battingTeamPlayers[1].id);
         if (!bowlerId) setBowlerId(bowlingTeamPlayers[0].id);
     }, [currentInnings, battingTeamPlayers, bowlingTeamPlayers, fixture]);
+
+    // ─── Unsaved data guard ────────────────────────────────────────────────────
+    // Keep a ref so the beforeRemove / AppState callbacks always see the latest
+    // overBalls without stale closure issues.
+    const overBallsRef = useRef(overBalls);
+    useEffect(() => { overBallsRef.current = overBalls; }, [overBalls]);
+
+    // 1) BACK NAVIGATION guard — intercepts the hardware back button AND the
+    //    Navigation back arrow while there are unsynced balls.
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+            if (overBallsRef.current.length === 0) return; // nothing unsaved, let go
+            e.preventDefault(); // block navigation
+
+            Alert.alert(
+                '⚠️ Unsynced Data',
+                `You have ${overBallsRef.current.length} ball(s) not yet saved to the server. What would you like to do?`,
+                [
+                    {
+                        text: 'Cancel',
+                        style: 'cancel',
+                        // Stay on screen
+                    },
+                    {
+                        text: 'Discard & Leave',
+                        style: 'destructive',
+                        onPress: async () => {
+                            // Wipe local buffer then allow navigation
+                            await AsyncStorage.removeItem(`over_balls_${params.fixtureId}`);
+                            setOverBalls([]);
+                            navigation.dispatch(e.data.action);
+                        },
+                    },
+                    {
+                        text: 'Sync & Leave',
+                        style: 'default',
+                        onPress: async () => {
+                            try {
+                                setIsSyncing(true);
+                                const payload = {
+                                    battingTeamId: currentInnings === 1
+                                        ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id)
+                                        : (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id),
+                                    bowlingTeamId: currentInnings === 1
+                                        ? (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id)
+                                        : (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id),
+                                    balls: overBallsRef.current,
+                                };
+                                await cricketScoringService.submitBallStats(params.fixtureId, payload);
+                                await AsyncStorage.removeItem(`over_balls_${params.fixtureId}`);
+                                setOverBalls([]);
+                            } catch (err) {
+                                console.error('Sync-on-leave error:', err);
+                            } finally {
+                                setIsSyncing(false);
+                                navigation.dispatch(e.data.action);
+                            }
+                        },
+                    },
+                ],
+            );
+        });
+        return unsubscribe;
+    }, [navigation, params?.fixtureId, currentInnings, tossData, teamAObj, teamBObj]);
+
+    // 2) APP BACKGROUND / KILL guard — when the app goes to background (home press,
+    //    task-switch, or OS kill), silently auto-sync any unsaved balls so they are
+    //    never lost even if the process gets killed before the user comes back.
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', async (nextState) => {
+            if (nextState === 'background' && overBallsRef.current.length > 0) {
+                try {
+                    const payload = {
+                        battingTeamId: currentInnings === 1
+                            ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id)
+                            : (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id),
+                        bowlingTeamId: currentInnings === 1
+                            ? (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id)
+                            : (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id),
+                        balls: overBallsRef.current,
+                    };
+                    await cricketScoringService.submitBallStats(params.fixtureId, payload);
+                    await AsyncStorage.removeItem(`over_balls_${params.fixtureId}`);
+                    // Update React state too, for when the app comes back to foreground
+                    setOverBalls([]);
+                } catch (err) {
+                    console.error('Background auto-sync error:', err);
+                    // Data remains in AsyncStorage as a fallback
+                }
+            }
+        });
+        return () => subscription.remove();
+    }, [params?.fixtureId, currentInnings, tossData, teamAObj, teamBObj]);
+    // ──────────────────────────────────────────────────────────────────────────
 
     if (isLoading || !fixture) {
         return (
@@ -399,8 +777,23 @@ const CricketScoringScreen = () => {
         const newBalls = balls + 1;
         if (!checkMatchEnd(score, newWickets, overs, newBalls)) {
             setBalls(newBalls);
-            setSelectionType('newBatsman');
-            setSelectionModalVisible(true);
+
+            // Check how many unused batters are still available
+            // Using counts instead of state (which hasn't updated yet) to avoid async issues
+            // battingTeamPlayers includes the just-dismissed striker (still in array, state not flushed)
+            // Available = total - already out before this ball - currently nonStriker
+            const alreadyOut = battingTeamPlayers.filter(p => p.isOut).length;
+            const totalBatters = battingTeamPlayers.length;
+            // After this wicket: alreadyOut+1 dismissed, 1 nonStriker still in → available = total - (alreadyOut+1) - 1
+            const availableNewBatters = totalBatters - (alreadyOut + 1) - 1;
+
+            if (availableNewBatters <= 0) {
+                // All out — no batters left to send in, complete the innings
+                setInningsCompleteModalVisible(true);
+            } else {
+                setSelectionType('newBatsman');
+                setSelectionModalVisible(true);
+            }
         }
 
         // Add to local over data
@@ -440,8 +833,18 @@ const CricketScoringScreen = () => {
 
         if (!checkMatchEnd(score, newWickets, overs, newBalls)) {
             setBalls(newBalls);
-            setSelectionType('striker');
-            setSelectionModalVisible(true);
+
+            // Check remaining available batters
+            const alreadyOut = battingTeamPlayers.filter(p => p.isOut).length;
+            const totalBatters = battingTeamPlayers.length;
+            const availableNewBatters = totalBatters - (alreadyOut + 1) - 1;
+
+            if (availableNewBatters <= 0) {
+                setInningsCompleteModalVisible(true);
+            } else {
+                setSelectionType('striker');
+                setSelectionModalVisible(true);
+            }
         }
 
         // Add to local over data
@@ -546,7 +949,16 @@ const CricketScoringScreen = () => {
     const isSelectionEnabled = (type) => {
         if (isMatchComplete) return false;
         if (type === 'bowler') return (balls === 0 || balls === 6);
-        if (type === 'striker' || type === 'nonStriker') return (selectionType === 'newBatsman' || selectionType === 'striker');
+        // Striker/non-striker can be changed:
+        //  - At innings start (before any ball bowled in the innings)
+        //  - Start of a new over (balls === 0), before first ball
+        //  - After a wicket falls (driven by selectionType modal flow)
+        if (type === 'striker' || type === 'nonStriker') {
+            const isInningsStart = overs === 0 && balls === 0;
+            const isOverStart = balls === 0;
+            const isAfterWicket = selectionType === 'newBatsman' || selectionType === 'striker';
+            return isInningsStart || isOverStart || isAfterWicket;
+        }
         return false;
     };
 
@@ -563,10 +975,11 @@ const CricketScoringScreen = () => {
 
             const response = await cricketScoringService.submitBallStats(params.fixtureId, payload);
             if (response.status === 'success' || response.status === 'true' || response.message?.includes('successfully')) {
+                // Clear the local buffer — DO NOT touch any UI state.
+                // Scoreboard will be refreshed from DB the next time the user enters this screen.
                 setOverBalls([]);
                 await AsyncStorage.removeItem(`over_balls_${params.fixtureId}`);
-                Alert.alert('Success', 'Scoring data synced successfully');
-                fetchMatchData(); // Refresh match state from server
+                Alert.alert('✓ Synced', 'Ball data saved to server.');
             } else {
                 Alert.alert('Sync Failed', response.message || 'Unknown error occurred');
             }
@@ -621,7 +1034,11 @@ const CricketScoringScreen = () => {
                 {/* Players Section */}
                 <View style={styles.playerSection}>
                     <View style={styles.playerCardRow}>
-                        <View style={[styles.playerCard, striker && styles.activePlayerCard]}>
+                        <TouchableOpacity
+                            style={[styles.playerCard, striker && styles.activePlayerCard]}
+                            onPress={() => isSelectionEnabled('striker') && openSelectionModal('striker')}
+                            activeOpacity={isSelectionEnabled('striker') ? 0.7 : 1}
+                        >
                             <View style={styles.playerHeader}>
                                 <View style={styles.strikerIndicator}>
                                     <View style={[styles.strikerDot, { backgroundColor: striker ? COLORS.primary : 'transparent' }]} />
@@ -631,16 +1048,20 @@ const CricketScoringScreen = () => {
                             </View>
                             <Text style={styles.playerName} numberOfLines={1}>{striker?.name || 'Select'}</Text>
                             <Text style={styles.playerStats}>{striker?.runs || 0} <Text style={styles.statsBalls}>({striker?.balls || 0})</Text></Text>
-                        </View>
+                        </TouchableOpacity>
 
-                        <View style={styles.playerCard}>
+                        <TouchableOpacity
+                            style={styles.playerCard}
+                            onPress={() => isSelectionEnabled('nonStriker') && openSelectionModal('nonStriker')}
+                            activeOpacity={isSelectionEnabled('nonStriker') ? 0.7 : 1}
+                        >
                             <View style={styles.playerHeader}>
                                 <Text style={styles.playerLabel}>Non-Striker</Text>
                                 {isSelectionEnabled('nonStriker') && <ChevronDown size={14} color={COLORS.textTertiary} />}
                             </View>
                             <Text style={styles.playerName} numberOfLines={1}>{nonStriker?.name || 'Select'}</Text>
                             <Text style={styles.playerStats}>{nonStriker?.runs || 0} <Text style={styles.statsBalls}>({nonStriker?.balls || 0})</Text></Text>
-                        </View>
+                        </TouchableOpacity>
                     </View>
 
                     {/* Bowler Selection */}
@@ -719,8 +1140,8 @@ const CricketScoringScreen = () => {
                         <AppButton title="COMPLETE OVER" onPress={completeOver} containerStyle={styles.actionBtn} />
                     )}
                     {overBalls.length > 0 && (
-                        <TouchableOpacity 
-                            style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]} 
+                        <TouchableOpacity
+                            style={[styles.syncButton, isSyncing && styles.syncButtonDisabled]}
                             onPress={handleSync}
                             disabled={isSyncing}
                         >
@@ -730,9 +1151,10 @@ const CricketScoringScreen = () => {
                             </Text>
                         </TouchableOpacity>
                     )}
-                    {currentInnings === 1 && (wickets >= maxWickets || overs >= maxOvers || (overs === maxOvers - 1 && balls >= 6)) && (
+                    {/* Complete Innings button — shows for any innings when overs done OR all out */}
+                    {!isMatchComplete && (wickets >= maxWickets || overs >= maxOvers || (overs === maxOvers - 1 && balls >= 6)) && (
                         <AppButton
-                            title="Complete Inn."
+                            title={currentInnings === 1 ? "Complete Inn. 1" : "Complete Match"}
                             onPress={() => setInningsCompleteModalVisible(true)}
                             variant="primary"
                             containerStyle={[styles.actionBtn, styles.completeInnBtn]}

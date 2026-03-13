@@ -30,6 +30,7 @@ const cricketScoringService = {
    * @param {string} tossData.tossDecision - The decision made by the toss winner ('batting' or 'bowling').
    * @param {string} tossData.battingTeamId - The ID of the team that will bat first.
    * @param {string} tossData.bowlingTeamId - The ID of the team that will bowl first.
+   */
   submitTossResult: async (fixtureId, tossData) => {
     try {
       const response = await apiClient.put(`/cricket-scoring/${fixtureId}/toss`, tossData);
@@ -67,6 +68,21 @@ const cricketScoringService = {
       return response.data;
     } catch (error) {
       console.error('Error submitting ball stats:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Fetches the live scoreboard for a cricket fixture.
+   * @param {string} fixtureId - The ID of the fixture.
+   * @returns {Promise} - The API response with matchDetails & innings.
+   */
+  getScoreboard: async (fixtureId) => {
+    try {
+      const response = await apiClient.get(`/cricket-scoring/${fixtureId}/scoreboard`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching scoreboard for fixture ${fixtureId}:`, error);
       throw error;
     }
   },
