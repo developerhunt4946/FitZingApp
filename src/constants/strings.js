@@ -78,13 +78,15 @@ const STRINGS = {
     WINNER_PRIZE: 'Winner Prize',
 
     // Sidebar / Menu
-    MY_EVENTS: 'My Events',
+    MY_MATCHES: 'My Matches',
     NOTIFICATIONS: 'Notifications',
     MY_ACHIEVEMENTS: 'My Achievements',
     REFER_FRIEND: 'Refer a Friend',
     REWARDS_OFFERS: 'Rewards & Offers',
     SETTINGS: 'Settings',
     HELP_SUPPORT: 'Help & Support',
+    MY_ACHIEVEMENTS: 'My Achievements',
+    REFER_FRIEND: 'Refer a Friend',
     BOOKINGS: 'Bookings',
     BOOKINGS_LIVE_SOON: 'Bookings will be live soon!',
     JOIN_LIVE_EVENTS: 'Till then, join live events and showcase your skills.',

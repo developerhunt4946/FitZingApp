@@ -29,17 +29,18 @@ import {
     User,
 } from 'lucide-react-native';
 
+import { useNavigation } from '@react-navigation/native';
+import SCREEN_NAMES from '../constants/screenNames';
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
 
 const MENU_ITEMS = [
-    { icon: Calendar, label: STRINGS.MY_EVENTS, color: COLORS.primary },
-    { icon: Bell, label: STRINGS.NOTIFICATIONS, color: '#F59E0B' },
-    { icon: Trophy, label: STRINGS.MY_ACHIEVEMENTS, color: '#22C55E' },
-    { icon: Users, label: STRINGS.REFER_FRIEND, color: '#A855F7' },
-    { icon: Gift, label: STRINGS.REWARDS_OFFERS, color: '#EF4444' },
-    { icon: Settings, label: STRINGS.SETTINGS, color: COLORS.textSecondary },
-    { icon: HelpCircle, label: STRINGS.HELP_SUPPORT, color: COLORS.textSecondary },
+    { icon: Calendar, label: STRINGS.MY_MATCHES, color: COLORS.primary, screen: SCREEN_NAMES.MY_MATCHES },
+    { icon: Bell, label: STRINGS.NOTIFICATIONS, color: '#F59E0B', screen: SCREEN_NAMES.NOTIFICATION },
+    { icon: Trophy, label: STRINGS.MY_ACHIEVEMENTS, color: '#22C55E', screen: SCREEN_NAMES.MY_ACHIEVEMENTS },
+    { icon: Users, label: STRINGS.REFER_FRIEND, color: '#A855F7', screen: SCREEN_NAMES.REFER_FRIEND },
+    { icon: HelpCircle, label: STRINGS.HELP_SUPPORT, color: COLORS.textSecondary, screen: SCREEN_NAMES.HELP_SUPPORT },
 ];
 
 const Sidebar = ({ visible, onClose }) => {
@@ -48,6 +49,7 @@ const Sidebar = ({ visible, onClose }) => {
     // isRendered controls Modal mounting; visible drives animation
     const [isRendered, setIsRendered] = useState(false);
     const dispatch = useDispatch();
+    const navigation = useNavigation();
     const { user } = useSelector(state => state.auth);
 
     useEffect(() => {
@@ -95,6 +97,13 @@ const Sidebar = ({ visible, onClose }) => {
     const handleLogout = () => {
         onClose();
         setTimeout(() => dispatch(logout()), 250);
+    };
+
+    const handlePress = (screen) => {
+        onClose();
+        if (screen) {
+            navigation.navigate(screen);
+        }
     };
 
     const firstName = user?.first_name || user?.firstName || user?.name || 'Athlete';
@@ -149,7 +158,7 @@ const Sidebar = ({ visible, onClose }) => {
                                     key={item.label}
                                     style={styles.menuItem}
                                     activeOpacity={0.65}
-                                    onPress={onClose}
+                                    onPress={() => handlePress(item.screen)}
                                 >
                                     <View style={[styles.menuIconWrap, { backgroundColor: item.color + '18' }]}>
                                         <Icon size={18} color={item.color} />
@@ -160,6 +169,7 @@ const Sidebar = ({ visible, onClose }) => {
                             );
                         })}
                     </View>
+
 
                     {/* Bottom: Logout */}
                     <View style={styles.sidebarBottom}>

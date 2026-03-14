@@ -32,6 +32,10 @@ const SCREEN_NAMES = {
     TOSS: 'Toss',
     CRICKET_SCORING: 'CricketScoring',
     CRICKET_SCORECARD: 'CricketScorecard',
+    MY_MATCHES: 'MyMatches',
+    MY_ACHIEVEMENTS: 'MyAchievements',
+    REFER_FRIEND: 'ReferFriend',
+    HELP_SUPPORT: 'HelpSupport',
 };
 
 export default SCREEN_NAMES;

@@ -24,7 +24,11 @@ import {
   MatchesScreen,
   TossScreen,
   CricketScoringScreen,
-  CricketScorecardScreen
+  CricketScorecardScreen,
+  MyMatchesScreen,
+  MyAchievementsScreen,
+  ReferFriendScreen,
+  HelpSupportScreen
 } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
 import { Home, User, Ticket, Plus } from 'lucide-react-native';
@@ -206,6 +210,22 @@ const AppStack = () => {
       <Stack.Screen
         name={SCREEN_NAMES.CRICKET_SCORECARD}
         component={CricketScorecardScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.MY_MATCHES}
+        component={MyMatchesScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.MY_ACHIEVEMENTS}
+        component={MyAchievementsScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.REFER_FRIEND}
+        component={ReferFriendScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.HELP_SUPPORT}
+        component={HelpSupportScreen}
       />
       <Stack.Screen
         name={SCREEN_NAMES.CREATE_ESPORTS_TOURNAMENT}
