@@ -86,6 +86,23 @@ const cricketScoringService = {
       throw error;
     }
   },
+  /**
+   * Marks an innings as complete.
+   * @param {string} fixtureId - The ID of the fixture.
+   * @param {string} battingTeamId - The ID of the team that just finished batting.
+   * @returns {Promise} - The API response.
+   */
+  completeInnings: async (fixtureId, battingTeamId) => {
+    try {
+      const response = await apiClient.patch(`/cricket-scoring/${fixtureId}/complete-innings`, {
+        battingTeamId: battingTeamId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Error completing innings for fixture ${fixtureId}:`, error);
+      throw error;
+    }
+  },
 };
 
 export default cricketScoringService;

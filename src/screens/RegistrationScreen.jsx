@@ -27,7 +27,8 @@ import {
 } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import STRINGS from '../constants/strings';
-import { AppAlert } from '../components';
+import { AppAlert, AppInput } from '../components';
+import SCREEN_NAMES from '../constants/screenNames';
 
 const RegistrationScreen = ({ route }) => {
     const navigation = useNavigation();

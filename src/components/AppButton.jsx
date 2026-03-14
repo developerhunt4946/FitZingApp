@@ -103,7 +103,9 @@ const AppButton = ({
 
 const styles = StyleSheet.create({
     base: {
-        height: 48,
+        minHeight: 48,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',

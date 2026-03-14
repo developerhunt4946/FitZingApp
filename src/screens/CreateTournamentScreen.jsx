@@ -14,7 +14,7 @@ import {
     Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plus, X, Calendar, MapPin, Info, Users, Briefcase, Trophy, Award, Camera, Image as ImageIcon } from 'lucide-react-native';
+import { Plus, X, Calendar, MapPin, Info, Users, Briefcase, CheckCircle2, Trophy, Award, Camera, Image as ImageIcon } from 'lucide-react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import DatePicker from 'react-native-date-picker';

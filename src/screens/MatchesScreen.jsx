@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Play, CheckCircle2, AlertCircle, Trophy, Zap, Search, X } from 'lucide-react-native';
+import { ArrowLeft, Play, CheckCircle2, AlertCircle, Trophy, Zap, Search, X, LayoutList } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import STRINGS from '../constants/strings';
 import {
@@ -145,6 +145,12 @@ const MatchesScreen = () => {
         }
     };
 
+    const handleShowScorecard = (item) => {
+        navigation.navigate(SCREEN_NAMES.CRICKET_SCORECARD, {
+            fixtureId: item.id,
+        });
+    };
+
     const renderFixtureItem = ({ item }) => {
         const status = item.status?.toLowerCase() || 'scheduled';
         
@@ -271,6 +277,19 @@ const MatchesScreen = () => {
                         <Text style={styles.startMatchButtonText}>
                             {status === 'inprogress' ? 'CONTINUE MATCH' : 'START MATCH'}
                         </Text>
+                    </TouchableOpacity>
+                )}
+
+                {status === 'completed' && (
+                    <TouchableOpacity 
+                        style={[
+                            styles.startMatchButton,
+                            { backgroundColor: COLORS.success }
+                        ]}
+                        onPress={() => handleShowScorecard(item)}
+                    >
+                        <LayoutList size={16} color={COLORS.white} />
+                        <Text style={styles.startMatchButtonText}>SHOW SCORECARD</Text>
                     </TouchableOpacity>
                 )}
 

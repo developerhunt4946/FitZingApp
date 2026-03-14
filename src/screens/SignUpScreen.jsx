@@ -16,7 +16,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { COLORS, SPACING } from '../theme';
 import { signup, clearError } from '../redux/slices/authSlice';
 import SCREEN_NAMES from '../constants/screenNames';
-import { AppAlert } from '../components';
+import { AppAlert, AppButton, AppInput, DatePickerInput, PasswordInput } from '../components';
 import {
   User,
   Phone,
@@ -26,6 +26,7 @@ import {
   AlertCircle,
   Zap,
 } from 'lucide-react-native';
+import STRINGS from '../constants/strings';
 
 const SignUpScreen = ({ navigation }) => {
   const [form, setForm] = useState({
