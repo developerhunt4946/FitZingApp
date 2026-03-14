@@ -138,6 +138,15 @@ export const getRegisteredTeams = async (tournamentId, categoryId) => {
 // ==============================
 // Fixtures Management
 // ==============================
+export const getTournamentFixtures = async (tournamentId) => {
+    try {
+        const response = await apiClient.get(`/tournaments/${tournamentId}/fixtures`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
 export const getFixtures = async (tournamentId, categoryId, roundId) => {
     try {
         let url = `/tournaments/${tournamentId}/categories/${categoryId}/fixtures`;

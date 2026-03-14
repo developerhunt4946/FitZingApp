@@ -15,6 +15,7 @@ import {
     generateRounds as generateRoundsService,
     updateRoundStatus as updateRoundStatusService,
     getFixtures as getFixturesService,
+    getTournamentFixtures as getTournamentFixturesService,
 } from '../../services/tournamentServices';
 
 export const fetchGroups = createAsyncThunk(
@@ -115,6 +116,18 @@ export const fetchFixtures = createAsyncThunk(
             return data?.data || data;
         } catch (error) {
             return rejectWithValue(error?.message || 'Failed to fetch fixtures');
+        }
+    }
+);
+
+export const fetchTournamentFixtures = createAsyncThunk(
+    'tournament/fetchTournamentFixtures',
+    async (tournamentId, { rejectWithValue }) => {
+        try {
+            const data = await getTournamentFixturesService(tournamentId);
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to fetch tournament fixtures');
         }
     }
 );
@@ -430,6 +443,19 @@ const tournamentSlice = createSlice({
                 state.fixtures = action.payload;
             })
             .addCase(fetchFixtures.rejected, (state, action) => {
+                state.fixturesLoading = false;
+                state.error = action.payload;
+            })
+            // Tournament Fixtures
+            .addCase(fetchTournamentFixtures.pending, (state) => {
+                state.fixturesLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchTournamentFixtures.fulfilled, (state, action) => {
+                state.fixturesLoading = false;
+                state.fixtures = action.payload;
+            })
+            .addCase(fetchTournamentFixtures.rejected, (state, action) => {
                 state.fixturesLoading = false;
                 state.error = action.payload;
             });

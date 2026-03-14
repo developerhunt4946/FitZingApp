@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, X, Trophy, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, X, Trophy, AlertCircle, RefreshCcw } from 'lucide-react-native';
 import cricketScoringService from '../services/cricketScoringService';
 import { COLORS, SPACING } from '../theme';
 
@@ -158,6 +158,13 @@ const CricketScorecardScreen = () => {
                         <Text style={styles.scorecardTitle} numberOfLines={1}>Match Scorecard</Text>
                         <Text style={styles.scorecardSubtitle} numberOfLines={1}>{fixture?.teamAObj?.name} vs {fixture?.teamBObj?.name}</Text>
                     </View>
+                    <TouchableOpacity 
+                        onPress={fetchScoreboard} 
+                        style={styles.refreshIcon}
+                        disabled={isLoading}
+                    >
+                        <RefreshCcw size={20} color={COLORS.primary} />
+                    </TouchableOpacity>
                 </View>
             </View>
 
@@ -440,6 +447,11 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     headerIcon: { padding: 8 },
+    refreshIcon: {
+        padding: 10,
+        backgroundColor: COLORS.primary + '10',
+        borderRadius: 10,
+    },
 });
 
 export default CricketScorecardScreen;

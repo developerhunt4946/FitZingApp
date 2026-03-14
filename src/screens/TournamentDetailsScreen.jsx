@@ -241,7 +241,10 @@ const TournamentDetailsScreen = ({ route }) => {
                         if (isAdmin) {
                             navigation.navigate(SCREEN_NAMES.CATEGORY, { tournamentId: tournament.id });
                         } else {
-                            // SHOW_MATCHES action (to be implemented or placeholder)
+                            navigation.navigate(SCREEN_NAMES.MATCHES, { 
+                                tournamentId: tournament.id,
+                                categoryName: tournament.name 
+                            });
                         }
                     }}
                 >

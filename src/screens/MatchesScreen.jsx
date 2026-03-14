@@ -18,7 +18,9 @@ import { ArrowLeft, Play, CheckCircle2, AlertCircle, Trophy, Zap, Search, X, Lay
 import { COLORS, SPACING, FONTS } from '../theme';
 import STRINGS from '../constants/strings';
 import {
-    fetchFixtures
+    fetchFixtures,
+    fetchRegisteredTeams,
+    fetchTournamentFixtures
 } from '../redux/slices/tournamentSlice';
 import SCREEN_NAMES from '../constants/screenNames';
 import cricketScoringService from '../services/cricketScoringService';
@@ -31,6 +33,8 @@ const MatchesScreen = () => {
     const { tournamentId, categoryId, roundId, roundName, categoryName } = route.params;
 
     const { fixtures, fixturesLoading, tournaments } = useSelector((state) => state.tournament);
+    const { user } = useSelector((state) => state.auth);
+    const isAdmin = user?.role === 'admin' || user?.userRole === 'admin';
     const [searchQuery, setSearchQuery] = useState('');
 
     // Custom Alert State
@@ -52,15 +56,23 @@ const MatchesScreen = () => {
         });
     };
 
+    const fetchData = useCallback(async () => {
+        if (tournamentId && categoryId && roundId) {
+            dispatch(fetchFixtures({ tournamentId, categoryId, roundId }));
+        } else if (tournamentId) {
+            dispatch(fetchTournamentFixtures(tournamentId));
+        }
+    }, [dispatch, tournamentId, categoryId, roundId]);
+
     useFocusEffect(
         useCallback(() => {
-            dispatch(fetchFixtures({ tournamentId, categoryId, roundId }));
-        }, [dispatch, tournamentId, categoryId, roundId])
+            fetchData();
+        }, [fetchData])
     );
 
     const onRefresh = useCallback(() => {
-        dispatch(fetchFixtures({ tournamentId, categoryId, roundId }));
-    }, [dispatch, tournamentId, categoryId, roundId]);
+        fetchData();
+    }, [fetchData]);
 
     const filteredFixtures = useMemo(() => {
         if (!fixtures) return [];
@@ -77,15 +89,15 @@ const MatchesScreen = () => {
 
     const handleStartMatch = async (item) => {
         console.log('Starting match for fixture:', item.id, 'Category:', categoryName);
-        
+
         // Find tournament to check sport name
         const tournament = tournaments.find(t => t.id === tournamentId);
         const sportName = tournament?.sports?.name || '';
         const isCricket = sportName.toLowerCase().includes('cricket');
-        
+
         if (isCricket) {
             const currentStatus = item.status?.toLowerCase() || 'scheduled';
-            
+
             // If already in progress, navigate directly
             if (currentStatus === 'inprogress') {
                 if (item.tossWinnerId) {
@@ -118,11 +130,11 @@ const MatchesScreen = () => {
             if (currentStatus === 'scheduled' || currentStatus === 'notstarted') {
                 try {
                     await cricketScoringService.updateMatchStatus(item.id, 'inProgress');
-                    
+
                     // Show success alert and navigate on confirm
                     showAlert(
-                        'Success', 
-                        'Match has been started successfully!', 
+                        'Success',
+                        'Match has been started successfully!',
                         'success',
                         () => {
                             setAlertConfig(prev => ({ ...prev, visible: false }));
@@ -153,7 +165,7 @@ const MatchesScreen = () => {
 
     const renderFixtureItem = ({ item }) => {
         const status = item.status?.toLowerCase() || 'scheduled';
-        
+
         // Status based unique looks
         const getStatusStyles = () => {
             switch(status) {
@@ -193,11 +205,11 @@ const MatchesScreen = () => {
                         <Text style={styles.matchNoText}>MATCH {item.matchNo}</Text>
                     </View>
                     <View style={[
-                        styles.statusBadge, 
+                        styles.statusBadge,
                         { backgroundColor: statusStyles.badgeBg }
                     ]}>
                         <View style={[
-                            styles.statusDot, 
+                            styles.statusDot,
                             { backgroundColor: statusStyles.dotColor }
                         ]} />
                         <Text style={[
@@ -242,7 +254,7 @@ const MatchesScreen = () => {
                     {/* Team B */}
                     <View style={[styles.teamWrapper, item.winnerId === item.teamB && styles.winnerWrapper]}>
                         <View style={[
-                            styles.teamInitialContainer, 
+                            styles.teamInitialContainer,
                             { backgroundColor: COLORS.secondary + '10' },
                             status === 'inprogress' && { borderColor: COLORS.secondary }
                         ]}>
@@ -265,23 +277,40 @@ const MatchesScreen = () => {
                     </View>
                 </View>
 
-                {item.status !== 'completed' && !item.isBye && (
-                    <TouchableOpacity 
-                        style={[
-                            styles.startMatchButton,
-                            status === 'inprogress' && { backgroundColor: COLORS.warning }
-                        ]}
-                        onPress={() => handleStartMatch(item)}
-                    >
-                        <Zap size={16} color={COLORS.white} fill={COLORS.white} />
-                        <Text style={styles.startMatchButtonText}>
-                            {status === 'inprogress' ? 'CONTINUE MATCH' : 'START MATCH'}
-                        </Text>
-                    </TouchableOpacity>
+                {isAdmin ? (
+                    item.status !== 'completed' && !item.isBye && (
+                        <TouchableOpacity
+                            style={[
+                                styles.startMatchButton,
+                                status === 'inprogress' && { backgroundColor: COLORS.warning }
+                            ]}
+                            onPress={() => handleStartMatch(item)}
+                        >
+                            <Zap size={16} color={COLORS.white} fill={COLORS.white} />
+                            <Text style={styles.startMatchButtonText}>
+                                {status === 'inprogress' ? 'CONTINUE MATCH' : 'START MATCH'}
+                            </Text>
+                        </TouchableOpacity>
+                    )
+                ) : (
+                    (status === 'completed' || status === 'inprogress') && (
+                        <TouchableOpacity
+                            style={[
+                                styles.startMatchButton,
+                                { backgroundColor: status === 'inprogress' ? COLORS.warning : COLORS.success }
+                            ]}
+                            onPress={() => handleShowScorecard(item)}
+                        >
+                            <LayoutList size={16} color={COLORS.white} />
+                            <Text style={styles.startMatchButtonText}>
+                                {status === 'inprogress' ? 'VIEW LIVE SCORECARD' : 'SHOW SCORECARD'}
+                            </Text>
+                        </TouchableOpacity>
+                    )
                 )}
 
-                {status === 'completed' && (
-                    <TouchableOpacity 
+                {isAdmin && status === 'completed' && (
+                    <TouchableOpacity
                         style={[
                             styles.startMatchButton,
                             { backgroundColor: COLORS.success }
@@ -291,6 +320,13 @@ const MatchesScreen = () => {
                         <LayoutList size={16} color={COLORS.white} />
                         <Text style={styles.startMatchButtonText}>SHOW SCORECARD</Text>
                     </TouchableOpacity>
+                )}
+
+                {!isAdmin && status === 'scheduled' && !item.isBye && (
+                    <View style={styles.scheduledInfo}>
+                        <AlertCircle size={14} color={COLORS.textTertiary} />
+                        <Text style={styles.scheduledInfoText}>Match yet to start. Scorecard will be available once live.</Text>
+                    </View>
                 )}
 
                 {item.isBye && (
@@ -312,10 +348,14 @@ const MatchesScreen = () => {
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backIcon}>
                     <ArrowLeft size={24} color={COLORS.text} />
                 </TouchableOpacity>
-                <View style={styles.headerTitleContainer}>
-                    <Text style={styles.headerTitle}>Match Schedule</Text>
-                    <Text style={styles.headerSubtitle} numberOfLines={1}>{roundName} • {categoryName}</Text>
-                </View>
+                    <View style={styles.headerTitleContainer}>
+                        <Text style={styles.headerTitle} numberOfLines={1}>
+                            {roundName || 'Tournament Matches'}
+                        </Text>
+                        <Text style={styles.headerSubtitle} numberOfLines={1}>
+                            {categoryName || 'All Categories'}
+                        </Text>
+                    </View>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -636,6 +676,24 @@ const styles = StyleSheet.create({
         flex: 1,
         fontWeight: '600',
         lineHeight: 14,
+    },
+    scheduledInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 4,
+        backgroundColor: COLORS.background,
+        padding: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: COLORS.borderLight,
+        borderStyle: 'dashed',
+    },
+    scheduledInfoText: {
+        fontSize: 10,
+        color: COLORS.textTertiary,
+        flex: 1,
+        fontWeight: '600',
     },
     emptyContainer: {
         flex: 1,
