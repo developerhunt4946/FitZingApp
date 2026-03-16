@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
-import { ArrowLeft, ChevronRight, Users, Eye, Zap } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, Users, Eye, Zap, Trophy } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import STRINGS from '../constants/strings';
 import SCREEN_NAMES from '../constants/screenNames'
@@ -48,6 +48,16 @@ const CategoryScreen = () => {
                         </Text>
                     </View>
                 </View>
+                <TouchableOpacity
+                    style={styles.leaderboardIconBtn}
+                    onPress={() => navigation.navigate(SCREEN_NAMES.LEADERBOARD, {
+                        tournamentId,
+                        categoryId: category.id,
+                        categoryName: category.name
+                    })}
+                >
+                    <Trophy size={20} color={COLORS.primary} />
+                </TouchableOpacity>
             </View>
 
             <View style={styles.divider} />
@@ -170,6 +180,16 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         color: COLORS.text,
         marginBottom: 6,
+    },
+    leaderboardIconBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: COLORS.primary + '10',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.primary + '20',
     },
     specRow: {
         flexDirection: 'row',

@@ -36,8 +36,8 @@ export const createGroups = createAsyncThunk(
     'tournament/createGroups',
     async ({ tournamentId, categoryId, numberOfGroups, teamsPerGroup, roundId }, { rejectWithValue }) => {
         try {
-            const data = await createGroupsService(tournamentId, categoryId, { 
-                numberOfGroups, 
+            const data = await createGroupsService(tournamentId, categoryId, {
+                numberOfGroups,
                 teamsPerGroup,
                 roundId
             });
@@ -62,9 +62,9 @@ export const deleteGroup = createAsyncThunk(
 
 export const generateFixtures = createAsyncThunk(
     'tournament/generateFixtures',
-    async ({ tournamentId, categoryId, roundNo }, { rejectWithValue }) => {
+    async ({ tournamentId, categoryId, payload = {} }, { rejectWithValue }) => {
         try {
-            const data = await generateFixturesService(tournamentId, categoryId, { roundNo });
+            const data = await generateFixturesService(tournamentId, categoryId, payload);
             return data?.data || data;
         } catch (error) {
             return rejectWithValue(
@@ -112,9 +112,9 @@ export const createRound = createAsyncThunk(
 
 export const updateRoundStatus = createAsyncThunk(
     'tournament/updateRoundStatus',
-    async ({ roundId, status, name }, { rejectWithValue }) => {
+    async ({ roundId, roundStatus }, { rejectWithValue }) => {
         try {
-            const data = await updateRoundStatusService(roundId, { status, name });
+            const data = await updateRoundStatusService(roundId, { roundStatus: roundStatus });
             return data?.data || data;
         } catch (error) {
             return rejectWithValue(error?.message || 'Failed to update round status');
@@ -248,10 +248,10 @@ export const advanceTournament = createAsyncThunk(
     'tournament/advance',
     async ({ tournamentId, categoryId, nextFormat, numberOfGroups, teamsPerGroup }, { rejectWithValue }) => {
         try {
-            const data = await advanceTournamentFixturesService(tournamentId, categoryId, { 
-                nextFormat, 
-                numberOfGroups, 
-                teamsPerGroup 
+            const data = await advanceTournamentFixturesService(tournamentId, categoryId, {
+                nextFormat,
+                numberOfGroups,
+                teamsPerGroup
             });
             return data?.data || data;
         } catch (error) {

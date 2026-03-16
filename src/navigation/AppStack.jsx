@@ -25,6 +25,7 @@ import {
   TossScreen,
   CricketScoringScreen,
   CricketScorecardScreen,
+  LeaderboardScreen,
   MyMatchesScreen,
   MyAchievementsScreen,
   ReferFriendScreen,
@@ -198,6 +199,10 @@ const AppStack = () => {
       <Stack.Screen
         name={SCREEN_NAMES.MATCHES}
         component={MatchesScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.LEADERBOARD}
+        component={LeaderboardScreen}
       />
       <Stack.Screen
         name={SCREEN_NAMES.TOSS}

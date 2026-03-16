@@ -20,6 +20,7 @@ import MatchesScreen from './MatchesScreen';
 import TossScreen from './TossScreen';
 import CricketScoringScreen from './CricketScoringScreen';
 import CricketScorecardScreen from './CricketScorecardScreen';
+import LeaderboardScreen from './LeaderboardScreen';
 
 import MyMatchesScreen from './MyMatchesScreen';
 import MyAchievementsScreen from './MyAchievementsScreen';
@@ -47,6 +48,7 @@ export {
     TossScreen,
     CricketScoringScreen,
     CricketScorecardScreen,
+    LeaderboardScreen,
     MyMatchesScreen,
     MyAchievementsScreen,
     ReferFriendScreen,

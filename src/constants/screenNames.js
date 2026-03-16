@@ -36,6 +36,7 @@ const SCREEN_NAMES = {
     MY_ACHIEVEMENTS: 'MyAchievements',
     REFER_FRIEND: 'ReferFriend',
     HELP_SUPPORT: 'HelpSupport',
+    LEADERBOARD: 'Leaderboard',
 };
 
 export default SCREEN_NAMES;

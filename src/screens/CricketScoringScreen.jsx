@@ -138,6 +138,12 @@ const CricketScoringScreen = () => {
 
                 // Initialize Scoring from activeInnings
                 if (activeInnings) {
+                    const battingPlayers = activeInnings.inningsNo === 2
+                        ? (f.battingTeamId === f.teamA ? tBPlayers : tAPlayers)
+                        : (f.battingTeamId === f.teamA ? tAPlayers : tBPlayers);
+                    if (battingPlayers.length > 0) {
+                        setMaxWickets(battingPlayers.length - 1);
+                    }
                     setCurrentInnings(activeInnings.inningsNo || 1);
                     setScore(activeInnings.totalRuns || 0);
                     setWickets(activeInnings.wickets || 0);
@@ -684,18 +690,21 @@ const CricketScoringScreen = () => {
         const totalBallsPlayed = (finalOvers * 6) + finalBalls;
         const isOversDone = totalBallsPlayed >= (maxOvers * 6);
 
+        const inn1BatName = tossData?.battingTeamId === teamAObj?.id ? teamAObj?.name : teamBObj?.name;
+        const inn2BatName = tossData?.battingTeamId === teamAObj?.id ? teamBObj?.name : teamAObj?.name;
+
         if (currentInnings === 2) {
             if (finalScore >= targetScore) {
-                const bTeamName = currentInnings === 1 ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.name : teamBObj?.name) : (tossData?.battingTeamId === teamAObj?.id ? teamBObj?.name : teamAObj?.name);
-                setWinnerMessage(`${bTeamName} won by ${maxWickets - finalWickets} wickets!`);
+                const currentMaxWickets = battingTeamPlayers.length > 0 ? battingTeamPlayers.length - 1 : maxWickets;
+                const wicketsRemaining = currentMaxWickets - finalWickets;
+                setWinnerMessage(`${inn2BatName} won by ${wicketsRemaining} ${wicketsRemaining === 1 ? 'wicket' : 'wickets'}!`);
                 setInningsCompleteModalVisible(false);
                 return true;
             }
             if (isAllOut || isOversDone) {
                 if (finalScore < targetScore - 1) {
-                    const aTeamName = currentInnings === 1 ? (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.name : teamBObj?.name) : (tossData?.battingTeamId === teamAObj?.id ? teamAObj?.name : teamBObj?.name);
-                    const inn1Score = parseInt(allInnings[0].score.split('/')[0]);
-                    setWinnerMessage(`${aTeamName} won by ${inn1Score - finalScore} runs!`);
+                    const inn1Score = targetScore - 1;
+                    setWinnerMessage(`${inn1BatName} won by ${inn1Score - finalScore} runs!`);
                 } else {
                     setWinnerMessage("Match Tied!");
                 }
@@ -986,7 +995,7 @@ const CricketScoringScreen = () => {
             setInningsCompleteModalVisible(false);
 
             // Re-fetch data to sync up with server's target calculation
-            fetchInitialData();
+            fetchMatchData();
         } catch (error) {
             showAlert("Error", "Failed to complete innings. Please try again.", "error");
         } finally {
@@ -999,15 +1008,24 @@ const CricketScoringScreen = () => {
             setIsSyncing(true);
             let winnerId = null;
 
+            const inn1BatName = tossData?.battingTeamId === teamAObj?.id ? teamAObj?.name : teamBObj?.name;
+            const inn2BatName = tossData?.battingTeamId === teamAObj?.id ? teamBObj?.name : teamAObj?.name;
+
             if (score >= targetScore) {
                 // Batting team (Innings 2) won
                 winnerId = tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id;
+                const currentMaxWickets = battingTeamPlayers.length > 0 ? battingTeamPlayers.length - 1 : maxWickets;
+                const wicketsRemaining = currentMaxWickets - wickets;
+                setWinnerMessage(`${inn2BatName} won by ${wicketsRemaining} ${wicketsRemaining === 1 ? 'wicket' : 'wickets'}!`);
             } else if (score < targetScore - 1) {
                 // Bowling team (Innings 1) won
                 winnerId = tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id;
+                const inn1Score = targetScore - 1;
+                setWinnerMessage(`${inn1BatName} won by ${inn1Score - score} runs!`);
             } else {
                 // Tie
                 winnerId = null;
+                setWinnerMessage("Match Tied!");
             }
 
             const response = await cricketScoringService.updateMatchStatus(params.fixtureId, 'completed', winnerId);
@@ -1141,7 +1159,7 @@ const CricketScoringScreen = () => {
                         <Text style={styles.overText}>({overs}.{balls === 6 ? 0 : balls})</Text>
                     </View>
                     {isMatchComplete ? (
-                        <Text style={[styles.targetLabel, { color: COLORS.primary }]}>{winnerMessage}</Text>
+                        <Text style={[styles.resultText, { color: COLORS.success }]}>{winnerMessage}</Text>
                     ) : (
                         targetScore && currentInnings === 2 && score < targetScore && (
                             <Text style={styles.targetLabel}>
@@ -1369,20 +1387,24 @@ const CricketScoringScreen = () => {
                                 </View>
                             </View>
 
-                            <View style={styles.statsTableHeader}>
-                                <Text style={[styles.colName, { flex: 4 }]}>Batter</Text>
-                                <Text style={styles.colRuns}>R</Text>
-                                <Text style={styles.colStats}>B</Text>
-                                <Text style={styles.colStats}>4s</Text>
-                                <Text style={styles.colStats}>6s</Text>
-                                <Text style={styles.colSR}>SR</Text>
-                            </View>
-
                             {(scorecardTab === 1
                                 ? (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers)
                                 : (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers)
-                            ).filter(p => p.balls > 0 || (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId))).map((p) => {
+                            ).filter(p => {
+                                const inn = allInnings.find(i => i.inningsNo === scorecardTab);
+                                const battedInThisInn = inn?.batting?.some(b => b.player.id === p.userId || b.player.id === p.id);
+                                return battedInThisInn || (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId));
+                            }).map((p) => {
+                                const inn = allInnings.find(i => i.inningsNo === scorecardTab);
+                                const bStats = inn?.batting?.find(b => b.player.id === p.userId || b.player.id === p.id);
+
+                                const runs = (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId)) ? p.runs : (bStats?.runs || 0);
+                                const ballsFaced = (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId)) ? p.balls : (bStats?.ballsFaced || 0);
+                                const fours = (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId)) ? p.fours : (bStats?.fours || 0);
+                                const sixes = (scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId)) ? p.sixes : (bStats?.sixes || 0);
+                                const isOut = bStats ? (bStats.dismissal && bStats.dismissal !== 'Not Out') : (scorecardTab === currentInnings && p.isOut);
                                 const isActive = scorecardTab === currentInnings && (p.id === strikerId || p.id === nonStrikerId);
+
                                 return (
                                     <View key={p.id} style={styles.statsTableRow}>
                                         <View style={{ flex: 4 }}>
@@ -1393,15 +1415,15 @@ const CricketScoringScreen = () => {
                                             >
                                                 {p.name}{isActive ? '*' : ''}
                                             </Text>
-                                            <Text style={[styles.statusBadge, p.isOut ? styles.outBadge : styles.notOutBadge]}>
-                                                {p.isOut ? 'out' : 'not out'}
+                                            <Text style={[styles.statusBadge, isOut ? styles.outBadge : styles.notOutBadge]}>
+                                                {isOut ? (bStats?.dismissal || 'out') : 'not out'}
                                             </Text>
                                         </View>
-                                        <Text style={styles.colRuns}>{p.runs}</Text>
-                                        <Text style={styles.colStats}>{p.balls}</Text>
-                                        <Text style={styles.colStats}>{p.fours}</Text>
-                                        <Text style={styles.colStats}>{p.sixes}</Text>
-                                        <Text style={styles.colSR}>{p.balls > 0 ? ((p.runs / p.balls) * 100).toFixed(1) : '0.0'}</Text>
+                                        <Text style={styles.colRuns}>{runs}</Text>
+                                        <Text style={styles.colStats}>{ballsFaced}</Text>
+                                        <Text style={styles.colStats}>{fours}</Text>
+                                        <Text style={styles.colStats}>{sixes}</Text>
+                                        <Text style={styles.colSR}>{ballsFaced > 0 ? ((runs / ballsFaced) * 100).toFixed(1) : '0.0'}</Text>
                                     </View>
                                 );
                             })}
@@ -1452,37 +1474,43 @@ const CricketScoringScreen = () => {
                             <View style={styles.sectionHeader}>
                                 <Text style={styles.sectionTitle}>BOWLING</Text>
                             </View>
-                            <View style={styles.statsTableHeader}>
-                                <Text style={[styles.colName, { flex: 4 }]}>Bowler</Text>
-                                <Text style={styles.colStats}>O</Text>
-                                <Text style={styles.colStats}>M</Text>
-                                <Text style={styles.colStats}>R</Text>
-                                <Text style={styles.colStats}>W</Text>
-                                <Text style={styles.colSR}>Econ</Text>
-                            </View>
                             {(scorecardTab === 1
                                 ? (tossData?.battingTeamId === teamAObj?.id ? teamBPlayers : teamAPlayers)
                                 : (tossData?.battingTeamId === teamAObj?.id ? teamAPlayers : teamBPlayers)
-                            ).filter(p => p.ballsBowled > 0 || (scorecardTab === currentInnings && p.id === bowlerId)).map((p) => (
-                                <View key={p.id} style={styles.statsTableRow}>
-                                    <View style={{ flex: 4 }}>
-                                        <Text
-                                            style={styles.batterNameModern}
-                                            numberOfLines={1}
-                                            ellipsizeMode="tail"
-                                        >
-                                            {p.name}
+                            ).filter(p => {
+                                const inn = allInnings.find(i => i.inningsNo === scorecardTab);
+                                const bowledInThisInn = inn?.bowling?.some(b => b.player.id === p.userId || b.player.id === p.id);
+                                return bowledInThisInn || (scorecardTab === currentInnings && p.id === bowlerId);
+                            }).map((p) => {
+                                const inn = allInnings.find(i => i.inningsNo === scorecardTab);
+                                const bowlStats = inn?.bowling?.find(b => b.player.id === p.userId || b.player.id === p.id);
+
+                                const legalBalls = (scorecardTab === currentInnings && p.id === bowlerId) ? p.ballsBowled : (bowlStats?.legalBalls || 0);
+                                const runsConceded = (scorecardTab === currentInnings && p.id === bowlerId) ? p.runsConceded : (bowlStats?.runsConceded || 0);
+                                const wickets = (scorecardTab === currentInnings && p.id === bowlerId) ? p.wickets : (bowlStats?.wickets || 0);
+                                const maidens = bowlStats?.maidens || (scorecardTab === currentInnings && p.id === bowlerId ? p.maidens : 0);
+
+                                return (
+                                    <View key={p.id} style={styles.statsTableRow}>
+                                        <View style={{ flex: 4 }}>
+                                            <Text
+                                                style={styles.batterNameModern}
+                                                numberOfLines={1}
+                                                ellipsizeMode="tail"
+                                            >
+                                                {p.name}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.colStats}>{Math.floor(legalBalls / 6)}.{legalBalls % 6}</Text>
+                                        <Text style={styles.colStats}>{maidens || 0}</Text>
+                                        <Text style={styles.colStats}>{runsConceded}</Text>
+                                        <Text style={styles.colStats}>{wickets}</Text>
+                                        <Text style={styles.colSR}>
+                                            {legalBalls > 0 ? ((runsConceded / legalBalls) * 6).toFixed(2) : '0.00'}
                                         </Text>
                                     </View>
-                                    <Text style={styles.colStats}>{p.overs}.{p.ballsBowled % 6}</Text>
-                                    <Text style={styles.colStats}>{p.maidens || 0}</Text>
-                                    <Text style={styles.colStats}>{p.runsConceded}</Text>
-                                    <Text style={styles.colStats}>{p.wickets}</Text>
-                                    <Text style={styles.colSR}>
-                                        {p.ballsBowled > 0 ? ((p.runsConceded / p.ballsBowled) * 6).toFixed(2) : '0.00'}
-                                    </Text>
-                                </View>
-                            ))}
+                                );
+                            })}
                         </View>
 
                     </ScrollView>
@@ -1552,17 +1580,32 @@ const CricketScoringScreen = () => {
                             <Text style={styles.winnerAnnounceModern}>{winnerMessage}</Text>
                         </View>
 
-                        <AppButton
+                        {/* <AppButton
                             title="SHOW SUMMARY"
                             containerStyle={styles.startInningsBtnModern}
                             onPress={() => setScorecardModalVisible(true)}
-                        />
+                        /> */}
 
                         <TouchableOpacity
                             style={styles.backHomeBtnModern}
-                            onPress={() => navigation.navigate('MainTabs')}
+                            onPress={() => navigation.reset({
+                                index: 0,
+                                routes: [
+                                    { name: 'MainTabs' },
+                                    {
+                                        name: SCREEN_NAMES.MATCHES,
+                                        params: {
+                                            tournamentId: fixture?.tournamentId || fixture?.tournament?.id,
+                                            categoryId: fixture?.categoryId,
+                                            roundId: fixture?.roundId,
+                                            roundName: fixture?.round?.name || fixture?.roundName,
+                                            categoryName: fixture?.category?.name || fixture?.categoryName
+                                        }
+                                    }
+                                ],
+                            })}
                         >
-                            <Text style={styles.backHomeTextModern}>Back to Home</Text>
+                            <Text style={styles.backHomeTextModern}>Back to Matches</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -1765,6 +1808,7 @@ const styles = StyleSheet.create({
     mainScore: { fontSize: 36, fontWeight: '900', color: COLORS.text },
     overText: { fontSize: 16, fontWeight: '700', color: COLORS.textTertiary },
     targetLabel: { fontSize: 12, fontWeight: '700', color: COLORS.error, marginTop: 4 },
+    resultText: { fontSize: 14, fontWeight: '800', marginTop: 4 },
     crrContainer: { alignItems: 'flex-end' },
     crrLabel: { fontSize: 10, fontWeight: '800', color: COLORS.textTertiary },
     crrValue: { fontSize: 18, fontWeight: '900', color: COLORS.text },

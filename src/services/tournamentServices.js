@@ -221,6 +221,7 @@ export const getGroups = async (tournamentId, categoryId) => {
 };
 
 export const createGroups = async (tournamentId, categoryId, payload) => {
+    console.log("payload", payload)
     try {
         const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/groups/generate`, payload);
         return response.data;
@@ -244,6 +245,18 @@ export const deleteGroup = async (tournamentId, categoryId, groupId) => {
 export const advanceTournamentFixtures = async (tournamentId, categoryId, payload) => {
     try {
         const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/advance`, payload);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
+// Points Table
+// ==============================
+export const getPointsTable = async (tournamentId, categoryId) => {
+    try {
+        const response = await apiClient.get(`/points-table/${tournamentId}/categories/${categoryId}`);
         return response.data;
     } catch (error) {
         throw error.response?.data || error;

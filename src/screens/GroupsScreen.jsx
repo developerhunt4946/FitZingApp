@@ -84,8 +84,8 @@ const GroupsScreen = () => {
                 tournamentId,
                 categoryId,
                 roundId,
-                numberOfGroups: parseInt(numGroups) || 2,
-                teamsPerGroup: parseInt(maxTeams) || 4,
+                numberOfGroups: parseInt(numGroups),
+                teamsPerGroup: parseInt(maxTeams),
             })).unwrap();
             setCreateModalVisible(false);
             showAlert('Success', 'Groups created successfully.', 'success');

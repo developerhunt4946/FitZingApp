@@ -101,6 +101,8 @@ const STRINGS = {
     GROUPS: 'Groups',
     CREATE_GROUPS: 'Create Groups',
     DELETE_GROUP: 'Delete Group',
+    LEADERBOARD: 'Leaderboard',
+    POINTS_TABLE: 'Points Table',
 };
 
 export default STRINGS;
