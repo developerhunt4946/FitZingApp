@@ -69,7 +69,8 @@ const CategoryScreen = () => {
                     onPress={() => navigation.navigate(SCREEN_NAMES.ROUNDS, {
                         tournamentId,
                         categoryId: category.id,
-                        categoryName: category.name
+                        categoryName: category.name,
+                        tournamentFormat: tournament.format
                     })}
                 >
                     <Zap size={18} color={COLORS.white} />

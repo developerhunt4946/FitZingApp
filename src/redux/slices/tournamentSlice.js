@@ -12,10 +12,12 @@ import {
     createGroups as createGroupsService,
     deleteGroup as deleteGroupService,
     getRounds as getRoundsService,
+    createRound as createRoundService,
     generateRounds as generateRoundsService,
     updateRoundStatus as updateRoundStatusService,
     getFixtures as getFixturesService,
     getTournamentFixtures as getTournamentFixturesService,
+    advanceTournamentFixtures as advanceTournamentFixturesService,
 } from '../../services/tournamentServices';
 
 export const fetchGroups = createAsyncThunk(
@@ -36,8 +38,8 @@ export const createGroups = createAsyncThunk(
         try {
             const data = await createGroupsService(tournamentId, categoryId, { 
                 numberOfGroups, 
-                teamsPerGroup, 
-                roundId 
+                teamsPerGroup,
+                roundId
             });
             return data?.data || data;
         } catch (error) {
@@ -92,6 +94,18 @@ export const generateRounds = createAsyncThunk(
             return data?.data || data;
         } catch (error) {
             return rejectWithValue(error?.message || 'Failed to generate rounds');
+        }
+    }
+);
+
+export const createRound = createAsyncThunk(
+    'tournament/createRound',
+    async ({ tournamentId, categoryId, payload }, { rejectWithValue }) => {
+        try {
+            const data = await createRoundService(tournamentId, categoryId, payload);
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to create round');
         }
     }
 );
@@ -226,6 +240,22 @@ export const registerTeam = createAsyncThunk(
             return rejectWithValue(
                 error?.message || 'Registration failed'
             );
+        }
+    }
+);
+
+export const advanceTournament = createAsyncThunk(
+    'tournament/advance',
+    async ({ tournamentId, categoryId, nextFormat, numberOfGroups, teamsPerGroup }, { rejectWithValue }) => {
+        try {
+            const data = await advanceTournamentFixturesService(tournamentId, categoryId, { 
+                nextFormat, 
+                numberOfGroups, 
+                teamsPerGroup 
+            });
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to advance tournament');
         }
     }
 );
@@ -366,7 +396,9 @@ const tournamentSlice = createSlice({
             })
             .addCase(fetchGroups.fulfilled, (state, action) => {
                 state.groupsLoading = false;
-                state.groups = action.payload;
+                // Always store as array to prevent .filter crash
+                const payload = action.payload;
+                state.groups = Array.isArray(payload) ? payload : (payload?.groups || payload?.data || []);
             })
             .addCase(fetchGroups.rejected, (state, action) => {
                 state.groupsLoading = false;
@@ -378,7 +410,8 @@ const tournamentSlice = createSlice({
             })
             .addCase(createGroups.fulfilled, (state, action) => {
                 state.loading = false;
-                state.groups = action.payload;
+                // Don't overwrite groups with non-array creation response
+                // Groups will be re-fetched by the calling screen after creation
             })
             .addCase(createGroups.rejected, (state, action) => {
                 state.loading = false;
@@ -421,6 +454,20 @@ const tournamentSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload;
             })
+            .addCase(createRound.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(createRound.fulfilled, (state, action) => {
+                state.loading = false;
+                if (action.payload) {
+                    state.rounds = [...state.rounds, action.payload];
+                }
+            })
+            .addCase(createRound.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload;
+            })
             .addCase(updateRoundStatus.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -457,6 +504,19 @@ const tournamentSlice = createSlice({
             })
             .addCase(fetchTournamentFixtures.rejected, (state, action) => {
                 state.fixturesLoading = false;
+                state.error = action.payload;
+            })
+            // Advance Tournament
+            .addCase(advanceTournament.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(advanceTournament.fulfilled, (state, action) => {
+                state.loading = false;
+                state.error = null;
+            })
+            .addCase(advanceTournament.rejected, (state, action) => {
+                state.loading = false;
                 state.error = action.payload;
             });
     },

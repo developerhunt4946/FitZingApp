@@ -74,7 +74,7 @@ const ESportsTournamentDetailsScreen = ({ route }) => {
                         onPress={() =>
                             navigation.canGoBack()
                                 ? navigation.goBack()
-                                : navigation.navigate(SCREEN_NAMES.HOME)
+                                : navigation.navigate('MainTabs')
                         }
                         style={styles.backBtn}
                     >
@@ -121,7 +121,7 @@ const ESportsTournamentDetailsScreen = ({ route }) => {
                             onPress={() =>
                                 navigation.canGoBack()
                                     ? navigation.goBack()
-                                    : navigation.navigate(SCREEN_NAMES.HOME)
+                                    : navigation.navigate('MainTabs')
                             }
                             style={styles.iconBtn}
                         >

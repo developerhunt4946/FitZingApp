@@ -32,9 +32,11 @@ const GroupsScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const dispatch = useDispatch();
-    const { tournamentId, categoryId, categoryName, roundNo, roundId } = route.params;
+    const { tournamentId, categoryId, categoryName, roundNo, roundId, round } = route.params;
 
     const { groups, groupsLoading, loading, error } = useSelector((state) => state.tournament);
+    const groupsArray = Array.isArray(groups) ? groups : [];
+    const filteredGroups = roundId ? groupsArray.filter(g => String(g.roundId) === String(roundId)) : groupsArray;
     const [expandedGroups, setExpandedGroups] = useState({});
 
     const [isCreateModalVisible, setCreateModalVisible] = useState(false);
@@ -77,10 +79,6 @@ const GroupsScreen = () => {
     };
 
     const handleCreateGroups = async () => {
-        if (!roundId) {
-            showAlert('Error', 'Round ID is missing. Please go back and try again.', 'error');
-            return;
-        }
         try {
             await dispatch(createGroups({
                 tournamentId,
@@ -180,7 +178,7 @@ const GroupsScreen = () => {
                 </TouchableOpacity>
                 <View style={styles.headerTitleContainer}>
                     <Text style={styles.headerTitle}>{STRINGS.GROUPS}</Text>
-                    <Text style={styles.headerSubtitle} numberOfLines={1}>Round {roundNo} - {categoryName}</Text>
+                    <Text style={styles.headerSubtitle} numberOfLines={1}>{roundNo ? `Round ${roundNo} - ` : ''}{categoryName}</Text>
                 </View>
                 <TouchableOpacity style={styles.addBtn} onPress={handleOpenCreateModal}>
                     <Plus size={24} color={COLORS.primary} />
@@ -191,9 +189,9 @@ const GroupsScreen = () => {
                 <View style={styles.centerContainer}>
                     <ActivityIndicator size="large" color={COLORS.primary} />
                 </View>
-            ) : groups?.length > 0 ? (
+            ) : filteredGroups?.length > 0 ? (
                 <FlatList
-                    data={groups}
+                    data={filteredGroups}
                     keyExtractor={(item, index) => item.id || item.groupId || index.toString()}
                     renderItem={renderGroupItem}
                     contentContainerStyle={styles.listContent}

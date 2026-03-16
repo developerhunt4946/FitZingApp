@@ -53,7 +53,7 @@ const BookingsScreen = () => {
                 <TouchableOpacity
                     style={styles.ctaButton}
                     activeOpacity={0.8}
-                    onPress={() => navigation.navigate(SCREEN_NAMES.HOME)}
+                    onPress={() => navigation.navigate('MainTabs')}
                 >
                     <Text style={styles.ctaText}>Explore Live Events</Text>
                     <ArrowRight size={20} color={COLORS.white} />

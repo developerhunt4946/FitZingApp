@@ -20,6 +20,7 @@ import cricketScoringService from '../services/cricketScoringService';
 import { COLORS, SPACING } from '../theme';
 import { LayoutList, ArrowLeft, CheckCircle2, ChevronDown, ChevronRight, Trophy, User, Users, X, RefreshCw, Plus, Minus, ChevronLeft, ChevronRight as ChevronRightIcon, ChevronLeft as ChevronLeftIcon, Trophy as TrophyIcon, User as UserIcon, Users as UsersIcon, X as XIcon, RefreshCw as RefreshCwIcon, Plus as PlusIcon, Minus as MinusIcon, ChevronLeft as ChevronLeftIcon2, ChevronRight as ChevronRightIcon2, Trophy as TrophyIcon2, User as UserIcon2, Users as UsersIcon2, X as XIcon2, RefreshCw as RefreshCwIcon2, Plus as PlusIcon2, Minus as MinusIcon2 } from 'lucide-react-native'
 import { AppButton, AppAlert } from '../components';
+import SCREEN_NAMES from '../constants/screenNames';
 
 const WICKET_TYPES = [
     'Bowled', 'Caught', 'LBW', 'Run Out', 'Stumped', 'Hit Wicket'
@@ -963,14 +964,14 @@ const CricketScoringScreen = () => {
         try {
             setIsSyncing(true);
             const battingTeamId = tossData?.battingTeamId;
-            
+
             if (!battingTeamId) {
                 showAlert("Error", "Batting team information missing.", "error");
                 return;
             }
 
             await cricketScoringService.completeInnings(params.fixtureId, battingTeamId);
-            
+
             setTargetScore(score + 1);
             setCurrentInnings(2);
             setScore(0);
@@ -983,11 +984,42 @@ const CricketScoringScreen = () => {
             setBowlerId(null);
             setLastBowlerId(null);
             setInningsCompleteModalVisible(false);
-            
+
             // Re-fetch data to sync up with server's target calculation
             fetchInitialData();
         } catch (error) {
             showAlert("Error", "Failed to complete innings. Please try again.", "error");
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    const completeMatch = async () => {
+        try {
+            setIsSyncing(true);
+            let winnerId = null;
+
+            if (score >= targetScore) {
+                // Batting team (Innings 2) won
+                winnerId = tossData?.battingTeamId === teamAObj?.id ? teamBObj?.id : teamAObj?.id;
+            } else if (score < targetScore - 1) {
+                // Bowling team (Innings 1) won
+                winnerId = tossData?.battingTeamId === teamAObj?.id ? teamAObj?.id : teamBObj?.id;
+            } else {
+                // Tie
+                winnerId = null;
+            }
+
+            const response = await cricketScoringService.updateMatchStatus(params.fixtureId, 'completed', winnerId);
+            if (response.status === 'success') {
+                setIsMatchComplete(true);
+                showAlert('Success', 'Match completed successfully.', 'success');
+            } else {
+                showAlert('Error', response.message || 'Failed to complete match.', 'error');
+            }
+        } catch (error) {
+            console.error('Error completing match:', error);
+            showAlert('Error', 'An error occurred while completing the match.', 'error');
         } finally {
             setIsSyncing(false);
         }
@@ -1113,8 +1145,8 @@ const CricketScoringScreen = () => {
                     ) : (
                         targetScore && currentInnings === 2 && score < targetScore && (
                             <Text style={styles.targetLabel}>
-                                {score === targetScore - 1 
-                                    ? "Scores Level" 
+                                {score === targetScore - 1
+                                    ? "Scores Level"
                                     : `Target: ${targetScore} (Need ${targetScore - score} in ${(maxOvers * 6) - (overs * 6 + balls)} balls)`
                                 }
                             </Text>
@@ -1264,7 +1296,7 @@ const CricketScoringScreen = () => {
                             const isOversDone = (overs * 6 + balls) >= (maxOvers * 6);
                             const isChased = currentInnings === 2 && score >= targetScore;
                             const inningsDone = isAllOut || isOversDone || isChased;
-                            
+
                             let buttonTitle = "COMPLETE OVER";
                             if (isMatchComplete) {
                                 buttonTitle = "MATCH COMPLETED";
@@ -1278,9 +1310,7 @@ const CricketScoringScreen = () => {
                                     onPress={async () => {
                                         if (inningsDone) {
                                             if (currentInnings === 2) {
-                                                // Handle Match Completion
-                                                    // Redundant API call removed as per USER request
-                                                    setIsMatchComplete(true); 
+                                                await completeMatch();
                                             } else {
                                                 setInningsCompleteModalVisible(true);
                                             }
@@ -1463,8 +1493,8 @@ const CricketScoringScreen = () => {
             <Modal visible={inningsCompleteModalVisible} transparent animationType="fade">
                 <View style={styles.overlayMessage}>
                     <View style={styles.modernMessageBox}>
-                        <TouchableOpacity 
-                            style={styles.modalCloseBtnAbsolute} 
+                        <TouchableOpacity
+                            style={styles.modalCloseBtnAbsolute}
                             onPress={() => setInningsCompleteModalVisible(false)}
                         >
                             <X size={24} color={COLORS.textTertiary} />
@@ -1506,8 +1536,8 @@ const CricketScoringScreen = () => {
             <Modal visible={isMatchComplete} transparent animationType="fade">
                 <View style={styles.overlayMessage}>
                     <View style={styles.modernMessageBox}>
-                        <TouchableOpacity 
-                            style={styles.modalCloseBtnAbsolute} 
+                        <TouchableOpacity
+                            style={styles.modalCloseBtnAbsolute}
                             onPress={() => setIsMatchComplete(false)}
                         >
                             <X size={24} color={COLORS.textTertiary} />
@@ -1530,7 +1560,7 @@ const CricketScoringScreen = () => {
 
                         <TouchableOpacity
                             style={styles.backHomeBtnModern}
-                            onPress={() => navigation.navigate(SCREEN_NAMES.HOME)}
+                            onPress={() => navigation.navigate('MainTabs')}
                         >
                             <Text style={styles.backHomeTextModern}>Back to Home</Text>
                         </TouchableOpacity>

@@ -25,7 +25,10 @@ import {
     updateRoundStatus,
     fetchFixtures,
     generateFixtures,
-    fetchGroups
+    fetchGroups,
+    createGroups,
+    advanceTournament,
+    createRound
 } from '../redux/slices/tournamentSlice';
 import { AppAlert } from '../components';
 
@@ -51,6 +54,12 @@ const RoundsScreen = () => {
     const [isCreateModalVisible, setCreateModalVisible] = useState(false);
     const [groupSize, setGroupSize] = useState('4');
 
+    // Group Generation Modal State
+    const [isGroupsModalVisible, setGroupsModalVisible] = useState(false);
+    const [numGroups, setNumGroups] = useState('2');
+    const [teamsPerGroup, setTeamsPerGroup] = useState('4');
+    const [selectedRoundId, setSelectedRoundId] = useState(null);
+
     // Custom Alert State
     const [alertConfig, setAlertConfig] = useState({
         visible: false,
@@ -63,7 +72,7 @@ const RoundsScreen = () => {
     useFocusEffect(
         useCallback(() => {
             dispatch(fetchRounds({ tournamentId, categoryId }));
-            dispatch(fetchGroups({ tournamentId, categoryId })); // Added fetchGroups
+            // dispatch(fetchGroups({ tournamentId, categoryId })); // Added fetchGroups
         }, [dispatch, tournamentId, categoryId])
     );
 
@@ -109,7 +118,56 @@ const RoundsScreen = () => {
             showAlert('Success', 'Rounds generated successfully.', 'success');
             dispatch(fetchRounds({ tournamentId, categoryId }));
         } catch (err) {
-            showAlert('Error', err || 'Failed to generate rounds', 'error');
+            showAlert('Error', err?.message || err || 'Failed to generate rounds', 'error');
+        }
+    };
+
+    const handleOpenGroupsModal = (roundId) => {
+        setSelectedRoundId(roundId);
+        setGroupsModalVisible(true);
+    };
+
+    const handleGroupsPress = (round) => {
+        // Always navigate to GroupsScreen - it will fetch groups and filter by roundId internally
+        navigation.navigate(SCREEN_NAMES.GROUPS, {
+            tournamentId,
+            categoryId,
+            categoryName,
+            roundNo: round.roundNo,
+            roundId: round.id,
+            round,
+        });
+    };
+
+    const submitGenerateGroups = async () => {
+        try {
+            await dispatch(createGroups({
+                tournamentId,
+                categoryId,
+                numberOfGroups: parseInt(numGroups),
+                teamsPerGroup: parseInt(teamsPerGroup),
+                roundId: selectedRoundId
+            })).unwrap();
+            setGroupsModalVisible(false);
+            showAlert('Success', 'Groups generated successfully.', 'success');
+            dispatch(fetchRounds({ tournamentId, categoryId }));
+            dispatch(fetchGroups({ tournamentId, categoryId }));
+        } catch (err) {
+            showAlert('Error', err?.message || err || 'Failed to generate groups', 'error');
+        }
+    };
+
+    const handleManualCreateRound = async () => {
+        try {
+            await dispatch(createRound({
+                tournamentId,
+                categoryId,
+                payload: {}
+            })).unwrap();
+            showAlert('Success', 'New round created successfully.', 'success');
+            dispatch(fetchRounds({ tournamentId, categoryId }));
+        } catch (err) {
+            showAlert('Error', err?.message || err || 'Failed to create round', 'error');
         }
     };
 
@@ -129,21 +187,66 @@ const RoundsScreen = () => {
                 name: `${categoryName} - ${round.name}`
             })).unwrap();
 
-            // Auto generate fixtures
+            // Auto advance tournament to generate fixtures/groups for this round
             try {
-                await dispatch(generateFixtures({
+                await dispatch(advanceTournament({
                     tournamentId,
-                    categoryId,
-                    roundNo: round.roundNo
+                    categoryId
                 })).unwrap();
-                showAlert('Success', 'Round started and fixtures generated successfully', 'success');
-            } catch (fixtureErr) {
-                showAlert('Warning', 'Round started but failed to generate fixtures: ' + (fixtureErr || 'Unknown error'), 'warning');
+                showAlert('Success', 'Round started and fixtures initialized successfully', 'success');
+            } catch (advanceErr) {
+                showAlert('Warning', 'Round started but failed to initialize fixtures: ' + (advanceErr?.message || advanceErr || 'Unknown error'), 'warning');
             }
 
             dispatch(fetchRounds({ tournamentId, categoryId }));
         } catch (err) {
             showAlert('Error', err || 'Failed to start round', 'error');
+        }
+    };
+
+    const handleCompleteRound = async (round) => {
+        try {
+            // Fetch fixtures for this round to check their status
+            const fixturesResponse = await dispatch(fetchFixtures({
+                tournamentId,
+                categoryId,
+                roundId: round.id
+            })).unwrap();
+
+            const incompleteMatches = fixturesResponse.filter(f =>
+                f.status?.toLowerCase() === 'scheduled' ||
+                f.status?.toLowerCase() === 'inprogress'
+            );
+
+            if (incompleteMatches.length > 0) {
+                showAlert('Incomplete Matches', 'pls compleye all matches for this round', 'warning');
+                return;
+            }
+
+            // All matches are completed, proceed to complete round
+            await dispatch(updateRoundStatus({
+                roundId: round.id,
+                status: 'completed',
+                name: `${categoryName} - ${round.name}`
+            })).unwrap();
+
+            showAlert('Success', 'Round completed successfully.', 'success');
+            dispatch(fetchRounds({ tournamentId, categoryId }));
+        } catch (err) {
+            showAlert('Error', err?.message || err || 'Failed to complete round', 'error');
+        }
+    };
+
+    const handleAdvanceTournament = async () => {
+        try {
+            await dispatch(advanceTournament({
+                tournamentId,
+                categoryId
+            })).unwrap();
+            showAlert('Success', 'Tournament advanced successfully.', 'success');
+            dispatch(fetchRounds({ tournamentId, categoryId }));
+        } catch (err) {
+            showAlert('Error', err?.message || err || 'Failed to advance tournament', 'error');
         }
     };
 
@@ -189,32 +292,48 @@ const RoundsScreen = () => {
                         </View>
                         <Text style={styles.categoryInfo}>{categoryName}</Text>
                     </View>
-                    <TouchableOpacity
-                        style={styles.groupsIconBtn}
-                        onPress={() => navigation.navigate(SCREEN_NAMES.GROUPS, {
-                            tournamentId,
-                            categoryId,
-                            categoryName,
-                            roundNo: item.roundNo,
-                            roundId: item.id
-                        })}
-                    >
-                        <Users size={22} color={COLORS.primary} />
-                    </TouchableOpacity>
+                    {tournamentFormat === 'group' && (
+                        <TouchableOpacity
+                            style={styles.groupsIconBtn}
+                            onPress={() => handleGroupsPress(item)}
+                        >
+                            <Users size={22} color={COLORS.primary} />
+                            <Text style={styles.generateGroupsBtnText}>Groups</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 <View style={styles.divider} />
 
                 <View style={styles.roundActions}>
                     <TouchableOpacity
-                        style={[styles.actionBtn, styles.startBtn]}
-                        onPress={() => handleStartRound(item)}
-                        disabled={item.status === 'inProgress' || item.status === 'completed'}
+                        style={[
+                            styles.actionBtn,
+                            item.status === 'completed' ? styles.viewBtn : styles.startBtn
+                        ]}
+                        onPress={() => {
+                            if (item.status === 'inProgress') {
+                                handleCompleteRound(item);
+                            } else if (!item.status || item.status.toLowerCase() === 'notstarted' || item.status.toLowerCase() === 'scheduled') {
+                                handleStartRound(item);
+                            }
+                        }}
+                        disabled={item.status === 'completed' || loading}
                     >
-                        <Play size={16} color={COLORS.white} fill={COLORS.white} />
-                        <Text style={styles.actionBtnText}>
-                            {item.status === 'inProgress' ? 'In Progress' : item.status === 'completed' ? 'Completed' : 'Start Round'}
-                        </Text>
+                        {loading && (item.status === 'inProgress' || !item.status || item.status === 'scheduled') ? (
+                            <ActivityIndicator size="small" color={COLORS.white} />
+                        ) : (
+                            <>
+                                {item.status === 'inProgress' ? (
+                                    <Zap size={16} color={COLORS.white} />
+                                ) : (
+                                    <Play size={16} color={COLORS.white} fill={COLORS.white} />
+                                )}
+                                <Text style={styles.actionBtnText}>
+                                    {item.status === 'inProgress' ? 'complete' : item.status === 'completed' ? 'Completed' : 'Start'}
+                                </Text>
+                            </>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={[
@@ -231,6 +350,84 @@ const RoundsScreen = () => {
             </View>
         );
     };
+
+    const renderGroupsModal = () => (
+        <Modal
+            visible={isGroupsModalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setGroupsModalVisible(false)}
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <View style={styles.modalTitleContainer}>
+                            <View style={styles.modalIconBadge}>
+                                <Users size={20} color={COLORS.primary} />
+                            </View>
+                            <View>
+                                <Text style={styles.modalTitle}>Generate Groups</Text>
+                                <Text style={styles.modalSubtitle}>Configure group settings</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => setGroupsModalVisible(false)}
+                            style={styles.modalCloseBtn}
+                        >
+                            <X size={20} color={COLORS.textSecondary} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={styles.modalBody}>
+                        <View style={styles.inputGroup}>
+                            <View style={styles.labelRow}>
+                                <Users size={16} color={COLORS.textSecondary} />
+                                <Text style={styles.label}>Number of Groups</Text>
+                            </View>
+                            <TextInput
+                                style={styles.input}
+                                value={numGroups}
+                                onChangeText={setNumGroups}
+                                keyboardType="numeric"
+                                placeholder="e.g. 2"
+                                placeholderTextColor={COLORS.textTertiary}
+                            />
+                        </View>
+
+                        <View style={[styles.inputGroup, { marginTop: 20 }]}>
+                            <View style={styles.labelRow}>
+                                <Users size={16} color={COLORS.textSecondary} />
+                                <Text style={styles.label}>Teams per Group</Text>
+                            </View>
+                            <TextInput
+                                style={styles.input}
+                                value={teamsPerGroup}
+                                onChangeText={setTeamsPerGroup}
+                                keyboardType="numeric"
+                                placeholder="e.g. 4"
+                                placeholderTextColor={COLORS.textTertiary}
+                            />
+                        </View>
+                    </View>
+
+                    <TouchableOpacity
+                        style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+                        onPress={submitGenerateGroups}
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            <ActivityIndicator color={COLORS.white} />
+                        ) : (
+                            <>
+                                <Text style={styles.submitBtnText}>Generate</Text>
+                                <ChevronRight size={18} color={COLORS.white} />
+                            </>
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Modal>
+    );
 
     const renderCreateRoundModal = () => (
         <Modal
@@ -314,7 +511,7 @@ const RoundsScreen = () => {
                     <Text style={styles.headerTitle}>{STRINGS.ROUNDS}</Text>
                     <Text style={styles.headerSubtitle} numberOfLines={1}>{categoryName}</Text>
                 </View>
-                <TouchableOpacity style={styles.addBtn} onPress={handleCreateRound}>
+                <TouchableOpacity style={styles.addBtn} onPress={handleManualCreateRound}>
                     <Plus size={24} color={COLORS.primary} />
                 </TouchableOpacity>
             </View>
@@ -330,6 +527,25 @@ const RoundsScreen = () => {
                     renderItem={renderRoundItem}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListFooterComponent={() => {
+                        const allRoundsCompleted = rounds && rounds.length > 0 && rounds.every(r => r.status === 'completed');
+                        if (!allRoundsCompleted) return null;
+
+                        return (
+                            <TouchableOpacity
+                                style={styles.advanceBtn}
+                                onPress={handleAdvanceTournament}
+                                disabled={loading}
+                            >
+                                {loading ? <ActivityIndicator color={COLORS.white} /> : (
+                                    <>
+                                        <Trophy size={20} color={COLORS.white} />
+                                        <Text style={styles.advanceBtnText}>Generate Next Round</Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             ) : (
                 <View style={styles.emptyContainer}>
@@ -343,13 +559,13 @@ const RoundsScreen = () => {
 
                     <TouchableOpacity
                         style={styles.generateBtn}
-                        onPress={handleCreateRound}
+                        onPress={handleManualCreateRound}
                         disabled={loading}
                     >
                         {loading ? <ActivityIndicator color={COLORS.white} /> : (
                             <>
                                 <Zap size={20} color={COLORS.white} />
-                                <Text style={styles.generateBtnText}>Create First Round</Text>
+                                <Text style={styles.generateBtnText}>Create Round</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -357,6 +573,7 @@ const RoundsScreen = () => {
             )}
 
             {renderCreateRoundModal()}
+            {renderGroupsModal()}
 
             {/* Custom Alert */}
             <AppAlert
@@ -468,6 +685,14 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         borderWidth: 1,
         borderColor: COLORS.primary + '20',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    generateGroupsBtnText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: COLORS.primary,
     },
     divider: {
         height: 1,
@@ -669,6 +894,28 @@ const styles = StyleSheet.create({
     },
     noMatchesText: {
         color: COLORS.textTertiary,
+    },
+    advanceBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: COLORS.secondary || '#10B981',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+        borderRadius: 16,
+        gap: 10,
+        marginTop: 24,
+        marginBottom: 40,
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+    },
+    advanceBtnText: {
+        color: COLORS.white,
+        fontSize: 16,
+        fontWeight: '800',
     },
 });
 

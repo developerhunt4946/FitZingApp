@@ -71,7 +71,7 @@ const AppAlert = ({
 
                     <View style={styles.content}>
                         {title && <Text style={styles.title}>{title}</Text>}
-                        {message && <Text style={styles.message}>{message}</Text>}
+                        {message && <Text style={styles.message}>{typeof message === 'string' ? message : String(message)}</Text>}
                     </View>
 
                     <View style={styles.footer}>

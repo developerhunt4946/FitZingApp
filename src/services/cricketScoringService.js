@@ -10,11 +10,11 @@ const cricketScoringService = {
    * @param {string} status - The new status (e.g., 'NotStarted', 'inProgress', 'completed').
    * @returns {Promise} - The API response.
    */
-  updateMatchStatus: async (fixtureId, status) => {
+  updateMatchStatus: async (fixtureId, status, winnerId) => {
     try {
-      const response = await apiClient.patch(`/cricket-scoring/${fixtureId}/status`, {
-        status: status,
-      });
+      const payload = { status };
+      if (winnerId !== undefined) payload.winnerId = winnerId;
+      const response = await apiClient.patch(`/cricket-scoring/${fixtureId}/status`, payload);
       return response.data;
     } catch (error) {
       console.error(`Error updating match status for fixture ${fixtureId}:`, error);

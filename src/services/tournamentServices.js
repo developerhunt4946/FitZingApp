@@ -181,6 +181,15 @@ export const getRounds = async (tournamentId, categoryId) => {
     }
 };
 
+export const createRound = async (tournamentId, categoryId, payload) => {
+    try {
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/rounds`, payload);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
 export const generateRounds = async (tournamentId, categoryId, payload) => {
     try {
         const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/rounds/generate`, payload);
@@ -223,6 +232,18 @@ export const createGroups = async (tournamentId, categoryId, payload) => {
 export const deleteGroup = async (tournamentId, categoryId, groupId) => {
     try {
         const response = await apiClient.delete(`/tournaments/${tournamentId}/categories/${categoryId}/groups/${groupId}`);
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
+// Advance Tournament
+// ==============================
+export const advanceTournamentFixtures = async (tournamentId, categoryId, payload) => {
+    try {
+        const response = await apiClient.post(`/tournaments/${tournamentId}/categories/${categoryId}/fixtures/advance`, payload);
         return response.data;
     } catch (error) {
         throw error.response?.data || error;

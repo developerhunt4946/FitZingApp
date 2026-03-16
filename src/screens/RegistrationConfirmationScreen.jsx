@@ -174,7 +174,7 @@ const RegistrationConfirmationScreen = ({ route }) => {
                             style={styles.homeBtn}
                             onPress={() => {
                                 setShowSuccess(false);
-                                navigation.navigate(SCREEN_NAMES.HOME);
+                                navigation.navigate('MainTabs');
                             }}
                         >
                             <Text style={styles.homeBtnText}>Go to Home</Text>

@@ -50,7 +50,7 @@ const TournamentDetailsScreen = ({ route }) => {
                 <View style={styles.centerContainer}>
                     <Text style={styles.errorText}>{STRINGS.TOURNAMENT_NOT_FOUND}</Text>
                     <TouchableOpacity
-                        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate(SCREEN_NAMES.HOME)}
+                        onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainTabs')}
                         style={styles.backBtn}
                     >
                         <Text style={styles.backBtnText}>{STRINGS.GO_BACK}</Text>
@@ -86,7 +86,7 @@ const TournamentDetailsScreen = ({ route }) => {
                     {/* Header Actions */}
                     <SafeAreaView edges={['top']} style={styles.headerRow}>
                         <TouchableOpacity
-                            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate(SCREEN_NAMES.HOME)}
+                            onPress={() => navigation.canGoBack() ? navigation.goBack() : navigation.navigate('MainTabs')}
                             style={styles.iconBtn}
                         >
                             <ArrowLeft size={24} color={COLORS.white} />
