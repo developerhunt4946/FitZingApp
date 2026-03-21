@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { Search, MapPin, Calendar, Trophy, ArrowLeft, Filter, X } from 'lucide-react-native';
+import { Search, MapPin, Calendar, Trophy, ArrowLeft, Filter, X, MoreVertical } from 'lucide-react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
 import SCREEN_NAMES from '../constants/screenNames';
 import STRINGS from '../constants/strings';
@@ -68,11 +68,23 @@ const AllTournamentsScreen = () => {
 
                 <View style={styles.cardContent}>
                     <View style={styles.cardHeader}>
-                        <Text style={styles.tournamentName} numberOfLines={1}>{item.name}</Text>
-                        <View style={styles.formatBadge}>
-                            <Trophy size={10} color={COLORS.secondary} />
-                            <Text style={styles.formatText}>{item.format?.toUpperCase()}</Text>
+                        <View style={styles.headerLeft}>
+                            <Text style={styles.tournamentName} numberOfLines={1}>{item.name}</Text>
+                            <View style={styles.formatBadge}>
+                                <Trophy size={10} color={COLORS.secondary} />
+                                <Text style={styles.formatText}>{item.format?.toUpperCase()}</Text>
+                            </View>
                         </View>
+                        <TouchableOpacity
+                            style={styles.moreBtn}
+                            onPress={() => navigation.navigate(SCREEN_NAMES.UPDATE_TOURNAMENT_STATUS, {
+                                tournamentId: item.id,
+                                currentStatus: item.status,
+                                tournamentName: item.name
+                            })}
+                        >
+                            <MoreVertical size={20} color={COLORS.textTertiary} />
+                        </TouchableOpacity>
                     </View>
 
                     <View style={styles.infoRow}>
@@ -264,12 +276,18 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
         marginBottom: 8,
     },
+    headerLeft: {
+        flex: 1,
+        gap: 4,
+    },
     tournamentName: {
         fontSize: 18,
         fontWeight: '800',
         color: COLORS.text,
-        flex: 1,
-        marginRight: 8,
+    },
+    moreBtn: {
+        padding: 4,
+        marginRight: -4,
     },
     formatBadge: {
         flexDirection: 'row',

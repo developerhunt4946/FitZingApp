@@ -18,6 +18,7 @@ import {
     getFixtures as getFixturesService,
     getTournamentFixtures as getTournamentFixturesService,
     advanceTournamentFixtures as advanceTournamentFixturesService,
+    updateTournamentStatus as updateTournamentStatusService,
 } from '../../services/tournamentServices';
 
 export const fetchGroups = createAsyncThunk(
@@ -170,6 +171,20 @@ export const fetchTournaments = createAsyncThunk(
             return rejectWithValue(
                 error?.message || 'Failed to fetch tournaments'
             );
+        }
+    }
+);
+
+export const updateTournamentStatus = createAsyncThunk(
+    'tournament/updateStatus',
+    async ({ id, status }, { dispatch, rejectWithValue }) => {
+        try {
+            const data = await updateTournamentStatusService(id, status);
+            // Refresh tournaments after status update
+            dispatch(fetchTournaments());
+            return data?.data || data;
+        } catch (error) {
+            return rejectWithValue(error?.message || 'Failed to update tournament status');
         }
     }
 );

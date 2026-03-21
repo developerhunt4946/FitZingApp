@@ -23,9 +23,11 @@ import CricketScorecardScreen from './CricketScorecardScreen';
 import LeaderboardScreen from './LeaderboardScreen';
 
 import MyMatchesScreen from './MyMatchesScreen';
+import MyTurfScreen from './MyTurfScreen';
 import MyAchievementsScreen from './MyAchievementsScreen';
 import ReferFriendScreen from './ReferFriendScreen';
 import HelpSupportScreen from './HelpSupportScreen';
+import UpdateTournamentStatusScreen from './UpdateTournamentStatusScreen';
 
 export {
     HomeScreen,
@@ -50,7 +52,9 @@ export {
     CricketScorecardScreen,
     LeaderboardScreen,
     MyMatchesScreen,
+    MyTurfScreen,
     MyAchievementsScreen,
     ReferFriendScreen,
     HelpSupportScreen,
+    UpdateTournamentStatusScreen,
 };

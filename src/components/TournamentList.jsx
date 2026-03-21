@@ -9,7 +9,7 @@ import {
     ActivityIndicator,
 } from 'react-native';
 import { COLORS, SPACING, FONTS } from '../theme';
-import { MapPin, Calendar, Users, Trophy, ChevronRight } from 'lucide-react-native';
+import { MapPin, Calendar, Users, Trophy, ChevronRight, MoreVertical } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import SCREEN_NAMES from '../constants/screenNames';
 import STRINGS from '../constants/strings';
@@ -62,7 +62,19 @@ const TournamentCard = ({ item }) => {
             </View>
 
             <View style={styles.cardContent}>
-                <Text style={styles.tournamentName} numberOfLines={1}>{item.name}</Text>
+                <View style={styles.nameRow}>
+                    <Text style={styles.tournamentName} numberOfLines={1}>{item.name}</Text>
+                    <TouchableOpacity
+                        style={styles.moreBtn}
+                        onPress={() => navigation.navigate(SCREEN_NAMES.UPDATE_TOURNAMENT_STATUS, {
+                            tournamentId: item.id,
+                            currentStatus: item.status,
+                            tournamentName: item.name
+                        })}
+                    >
+                        <MoreVertical size={20} color={COLORS.textTertiary} />
+                    </TouchableOpacity>
+                </View>
 
                 <View style={styles.infoRow}>
                     <MapPin size={14} color={COLORS.textTertiary} />
@@ -216,7 +228,17 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '800',
         color: COLORS.text,
+        flex: 1,
+    },
+    nameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: 6,
+    },
+    moreBtn: {
+        padding: 4,
+        marginRight: -4,
     },
     infoRow: {
         flexDirection: 'row',

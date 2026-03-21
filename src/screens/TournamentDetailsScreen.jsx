@@ -241,9 +241,9 @@ const TournamentDetailsScreen = ({ route }) => {
                         if (isAdmin) {
                             navigation.navigate(SCREEN_NAMES.CATEGORY, { tournamentId: tournament.id });
                         } else {
-                            navigation.navigate(SCREEN_NAMES.MATCHES, { 
+                            navigation.navigate(SCREEN_NAMES.MATCHES, {
                                 tournamentId: tournament.id,
-                                categoryName: tournament.name 
+                                categoryName: tournament.name
                             });
                         }
                     }}
@@ -253,6 +253,7 @@ const TournamentDetailsScreen = ({ route }) => {
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                    disabled={tournament.status === 'completed' || tournament.status === 'inprogress' || tournament.status === 'draft'}
                     style={[styles.footerBtn, styles.primaryBtn]}
                     onPress={() => navigation.navigate(SCREEN_NAMES.REGISTRATION, {
                         tournamentId: tournament.id,

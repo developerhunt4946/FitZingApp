@@ -36,7 +36,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SIDEBAR_WIDTH = SCREEN_WIDTH * 0.78;
 
 const MENU_ITEMS = [
-    { icon: Calendar, label: STRINGS.MY_MATCHES, color: COLORS.primary, screen: SCREEN_NAMES.MY_MATCHES },
+    { icon: User, label: STRINGS.PROFILE || 'Profile', color: COLORS.primary, screen: SCREEN_NAMES.PROFILE },
     { icon: Bell, label: STRINGS.NOTIFICATIONS, color: '#F59E0B', screen: SCREEN_NAMES.NOTIFICATION },
     { icon: Trophy, label: STRINGS.MY_ACHIEVEMENTS, color: '#22C55E', screen: SCREEN_NAMES.MY_ACHIEVEMENTS },
     { icon: Users, label: STRINGS.REFER_FRIEND, color: '#A855F7', screen: SCREEN_NAMES.REFER_FRIEND },
@@ -132,7 +132,11 @@ const Sidebar = ({ visible, onClose }) => {
                     </TouchableOpacity>
 
                     {/* User Profile Card */}
-                    <View style={styles.profileCard}>
+                    <TouchableOpacity 
+                        style={styles.profileCard} 
+                        activeOpacity={0.7}
+                        onPress={() => handlePress(SCREEN_NAMES.PROFILE)}
+                    >
                         <View style={styles.avatarLarge}>
                             <User size={28} color={COLORS.white} />
                         </View>
@@ -144,7 +148,7 @@ const Sidebar = ({ visible, onClose }) => {
                                 <Text style={styles.badgeText}>{STRINGS.ATHLETE_BADGE}</Text>
                             </View>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Divider */}
                     <View style={styles.divider} />

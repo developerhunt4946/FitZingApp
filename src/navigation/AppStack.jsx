@@ -27,12 +27,14 @@ import {
   CricketScorecardScreen,
   LeaderboardScreen,
   MyMatchesScreen,
+  MyTurfScreen,
   MyAchievementsScreen,
-  ReferFriendScreen,
-  HelpSupportScreen
+  HelpSupportScreen,
+  UpdateTournamentStatusScreen,
+  ReferFriendScreen
 } from '../screens';
 import { COLORS, FONTS, SPACING } from '../theme';
-import { Home, User, Ticket, Plus } from 'lucide-react-native';
+import { Home, User, Ticket, Plus, Swords, MapPin } from 'lucide-react-native';
 import SCREEN_NAMES from '../constants/screenNames';
 import STRINGS from '../constants/strings';
 
@@ -134,15 +136,26 @@ const MainTabs = () => {
         />
       )}
 
-      {/* Tab 3: Profile */}
-      <Tab.Screen
-        name={SCREEN_NAMES.PROFILE}
-        component={ProfileScreen}
-        options={{
-          title: STRINGS.PROFILE,
-          tabBarIcon: ({ color }) => <User size={22} color={color} />,
-        }}
-      />
+      {/* Tab 3: Admin -> MyTurf | User -> MyMatches */}
+      {isAdmin ? (
+        <Tab.Screen
+          name={SCREEN_NAMES.MY_TURF}
+          component={MyTurfScreen}
+          options={{
+            title: 'My Turf',
+            tabBarIcon: ({ color }) => <MapPin size={22} color={color} />,
+          }}
+        />
+      ) : (
+        <Tab.Screen
+          name={SCREEN_NAMES.MY_MATCHES}
+          component={MyMatchesScreen}
+          options={{
+            title: 'My Matches',
+            tabBarIcon: ({ color }) => <Swords size={22} color={color} />,
+          }}
+        />
+      )}
     </Tab.Navigator>
   );
 };
@@ -160,6 +173,10 @@ const AppStack = () => {
       <Stack.Screen name="MainTabs" component={MainTabs} />
 
       {/* Screens where Bottom Tab Bar should be hidden */}
+      <Stack.Screen
+        name={SCREEN_NAMES.PROFILE}
+        component={ProfileScreen}
+      />
       <Stack.Screen
         name={SCREEN_NAMES.TOURNAMENT_DETAILS}
         component={TournamentDetailsScreen}
@@ -243,6 +260,10 @@ const AppStack = () => {
       <Stack.Screen
         name={SCREEN_NAMES.ESPORTS_REGISTRATION}
         component={ESportsRegistrationScreen}
+      />
+      <Stack.Screen
+        name={SCREEN_NAMES.UPDATE_TOURNAMENT_STATUS}
+        component={UpdateTournamentStatusScreen}
       />
     </Stack.Navigator>
   );

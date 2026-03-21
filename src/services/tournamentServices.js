@@ -97,6 +97,18 @@ export const updateTournament = async (id, payload) => {
 };
 
 // ==============================
+// Update Tournament Status
+// ==============================
+export const updateTournamentStatus = async (id, status) => {
+    try {
+        const response = await apiClient.patch(`/tournaments/${id}/status`, { status });
+        return response.data;
+    } catch (error) {
+        throw error.response?.data || error;
+    }
+};
+
+// ==============================
 // Delete Tournament
 // ==============================
 export const deleteTournament = async (id) => {

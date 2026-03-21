@@ -33,10 +33,12 @@ const SCREEN_NAMES = {
     CRICKET_SCORING: 'CricketScoring',
     CRICKET_SCORECARD: 'CricketScorecard',
     MY_MATCHES: 'MyMatches',
+    MY_TURF: 'MyTurf',
     MY_ACHIEVEMENTS: 'MyAchievements',
     REFER_FRIEND: 'ReferFriend',
     HELP_SUPPORT: 'HelpSupport',
     LEADERBOARD: 'Leaderboard',
+    UPDATE_TOURNAMENT_STATUS: 'UpdateTournamentStatus',
 };
 
 export default SCREEN_NAMES;
