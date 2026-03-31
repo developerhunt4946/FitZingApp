@@ -57,6 +57,8 @@ const CreateTournamentScreen = ({ navigation }) => {
         image: null,
         oversPerInnings: '',
         winnerPrize: '',
+        numberOfSets: '',
+        pointsPerSet: '',
     });
 
     const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -213,6 +215,8 @@ const CreateTournamentScreen = ({ navigation }) => {
             image: null,
             oversPerInnings: '',
             winnerPrize: '',
+            numberOfSets: '',
+            pointsPerSet: '',
         });
     };
 
@@ -238,6 +242,8 @@ const CreateTournamentScreen = ({ navigation }) => {
             imageURL: '', // Will be filled after upload
             oversPerInnings: Number(formData.oversPerInnings) || 0,
             winnerPrize: Number(formData.winnerPrize) || 0,
+            numberOfSets: Number(formData.numberOfSets) || 0,
+            pointsPerSet: Number(formData.pointsPerSet) || 0,
         };
 
         try {
@@ -270,6 +276,8 @@ const CreateTournamentScreen = ({ navigation }) => {
             showAlert('Error', 'An unexpected error occurred', 'error');
         }
     };
+
+    const isSetBasedSport = ['volleyball', 'tennis', 'badminton'].some(sport => formData.sports.name?.toLowerCase().includes(sport));
 
     const renderInput = (label, value, onChangeText, placeholder, icon, keyboardType = 'default', multiline = false, isPressable = false, onPress = null) => (
         <View style={styles.inputGroup}>
@@ -402,13 +410,34 @@ const CreateTournamentScreen = ({ navigation }) => {
                         </View>
                     </View>
                     <View style={[styles.row, { marginTop: SPACING['16'] }]}>
-                        <View style={{ flex: 1, marginRight: SPACING['8'] }}>
-                            {renderInput(STRINGS.OVERS_PER_INNINGS, formData.oversPerInnings, (val) => handleChange('oversPerInnings', val), 'Enter overs', null, 'numeric')}
-                        </View>
-                        <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
-                            {renderInput(STRINGS.WINNER_PRIZE, formData.winnerPrize, (val) => handleChange('winnerPrize', val), 'Prize amount', null, 'numeric')}
-                        </View>
+                        {isSetBasedSport ? (
+                            <>
+                                <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                                    {renderInput('Number of Sets', formData.numberOfSets, (val) => handleChange('numberOfSets', val), 'e.g. 3', null, 'numeric')}
+                                </View>
+                                <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
+                                    {renderInput('Points per Set', formData.pointsPerSet, (val) => handleChange('pointsPerSet', val), 'e.g. 21', null, 'numeric')}
+                                </View>
+                            </>
+                        ) : (
+                            <>
+                                <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                                    {renderInput(STRINGS.OVERS_PER_INNINGS, formData.oversPerInnings, (val) => handleChange('oversPerInnings', val), 'Enter overs', null, 'numeric')}
+                                </View>
+                                <View style={{ flex: 1, marginLeft: SPACING['8'] }}>
+                                    {renderInput(STRINGS.WINNER_PRIZE, formData.winnerPrize, (val) => handleChange('winnerPrize', val), 'Prize amount', null, 'numeric')}
+                                </View>
+                            </>
+                        )}
                     </View>
+                    {isSetBasedSport && (
+                        <View style={[styles.row, { marginTop: SPACING['16'] }]}>
+                            <View style={{ flex: 1, marginRight: SPACING['8'] }}>
+                                {renderInput(STRINGS.WINNER_PRIZE, formData.winnerPrize, (val) => handleChange('winnerPrize', val), 'Prize amount', null, 'numeric')}
+                            </View>
+                            <View style={{ flex: 1, marginLeft: SPACING['8'] }} />
+                        </View>
+                    )}
                 </View>
 
                 {/* Categories */}

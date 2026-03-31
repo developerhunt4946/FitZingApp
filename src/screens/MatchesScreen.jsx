@@ -93,7 +93,9 @@ const MatchesScreen = () => {
         // Find tournament to check sport name
         const tournament = tournaments.find(t => t.id === tournamentId);
         const sportName = tournament?.sports?.name || '';
-        const isCricket = sportName.toLowerCase().includes('cricket');
+        const sportNameLower = sportName.toLowerCase();
+        const isCricket = sportNameLower.includes('cricket');
+        const isRacketSport = ['volleyball', 'tennis', 'badminton'].some(sport => sportNameLower.includes(sport));
 
         if (isCricket) {
             const currentStatus = item.status?.toLowerCase() || 'scheduled';
@@ -144,6 +146,44 @@ const MatchesScreen = () => {
                                 teamB: item.teamB,
                                 teamAObj: item.teamAObj,
                                 teamBObj: item.teamBObj,
+                            });
+                        }
+                    );
+                } catch (error) {
+                    showAlert('Error', 'Failed to start the match. Please try again.', 'error');
+                }
+            }
+        } else if (isRacketSport) {
+            const currentStatus = item.status?.toLowerCase() || 'scheduled';
+
+            // If already in progress, navigate directly to Points Scoring
+            if (currentStatus === 'inprogress') {
+                navigation.navigate(SCREEN_NAMES.POINTS_SCORING, {
+                    fixtureId: item.id,
+                    teamAObj: item.teamAObj,
+                    teamBObj: item.teamBObj,
+                    tournamentId,
+                });
+                return;
+            }
+
+            // If scheduled or NotStarted, call API
+            if (currentStatus === 'scheduled' || currentStatus === 'notstarted') {
+                try {
+                    await cricketScoringService.updateMatchStatus(item.id, 'inProgress');
+
+                    // Show success alert and navigate on confirm
+                    showAlert(
+                        'Success',
+                        'Match has been started successfully!',
+                        'success',
+                        () => {
+                            setAlertConfig(prev => ({ ...prev, visible: false }));
+                            navigation.navigate(SCREEN_NAMES.START_MATCH, {
+                                fixtureId: item.id,
+                                teamAObj: item.teamAObj,
+                                teamBObj: item.teamBObj,
+                                tournamentId,
                             });
                         }
                     );

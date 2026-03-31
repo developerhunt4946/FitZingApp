@@ -39,6 +39,8 @@ const SCREEN_NAMES = {
     HELP_SUPPORT: 'HelpSupport',
     LEADERBOARD: 'Leaderboard',
     UPDATE_TOURNAMENT_STATUS: 'UpdateTournamentStatus',
+    START_MATCH: 'StartMatch',
+    POINTS_SCORING: 'PointsScoring',
 };
 
 export default SCREEN_NAMES;
