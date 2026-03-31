@@ -71,9 +71,19 @@ const MyMatchesScreen = () => {
     }, [matches, searchQuery]);
 
     const handleShowScorecard = (item) => {
-        navigation.navigate(SCREEN_NAMES.CRICKET_SCORECARD, {
-            fixtureId: item.id,
-        });
+        const sportName = item.tournament?.sports?.name || item.tournamentObj?.sports?.name || '';
+        const sportNameLower = sportName.toLowerCase();
+        const isRacketSport = ['volleyball', 'tennis', 'badminton'].some(sport => sportNameLower.includes(sport));
+
+        if (isRacketSport) {
+            navigation.navigate(SCREEN_NAMES.POINTS_SCORECARD, {
+                fixtureId: item.id,
+            });
+        } else {
+            navigation.navigate(SCREEN_NAMES.CRICKET_SCORECARD, {
+                fixtureId: item.id,
+            });
+        }
     };
 
     const renderFixtureItem = ({ item }) => {

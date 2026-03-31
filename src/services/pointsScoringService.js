@@ -39,3 +39,16 @@ export const getPointsByFixture = async (fixtureId) => {
         throw error.response?.data || error;
     }
 };
+
+// ==============================
+// Get Points Scorecard by Fixture ID (GET /points-scoring/{fixtureId}/scorecard)
+// ==============================
+export const getPointsScorecard = async (fixtureId) => {
+    try {
+        const response = await apiClient.get(`/points-scoring/${fixtureId}/scorecard`);
+        return response.data;
+    } catch (error) {
+        console.log('Error fetching scorecard:', error.response?.data || error);
+        throw error.response?.data || error;
+    }
+};

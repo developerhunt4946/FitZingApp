@@ -41,6 +41,7 @@ const SCREEN_NAMES = {
     UPDATE_TOURNAMENT_STATUS: 'UpdateTournamentStatus',
     START_MATCH: 'StartMatch',
     POINTS_SCORING: 'PointsScoring',
+    POINTS_SCORECARD: 'PointsScorecard',
 };
 
 export default SCREEN_NAMES;

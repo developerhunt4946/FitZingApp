@@ -54,10 +54,13 @@ const PointsScoringScreen = () => {
         pointType: 'normal',
     });
 
-    const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', type: 'info' });
+    const [alertConfig, setAlertConfig] = useState({ 
+        visible: false, title: '', message: '', type: 'info', 
+        onConfirm: null, showCancel: false, confirmText: 'OK' 
+    });
 
-    const showAlert = (title, message, type = 'error') => {
-        setAlertConfig({ visible: true, title, message, type });
+    const showAlert = (title, message, type = 'error', onConfirm = null, showCancel = false, confirmText = 'OK') => {
+        setAlertConfig({ visible: true, title, message, type, onConfirm, showCancel, confirmText });
     };
 
     const fetchPoints = useCallback(async () => {
@@ -186,27 +189,23 @@ const PointsScoringScreen = () => {
         if (scoreA > scoreB) winnerId = teamAId;
         else if (scoreB > scoreA) winnerId = teamBId;
 
-        Alert.alert(
+        showAlert(
             "Complete Match",
             "Are you sure you want to complete this match? You cannot change scores after this.",
-            [
-                { text: "Cancel", style: "cancel" },
-                { 
-                    text: "Complete", 
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            setLoading(true);
-                            await cricketScoringService.updateMatchStatus(fixtureId, 'completed', winnerId);
-                            showAlert('Success', 'Match completed successfully.', 'success');
-                            navigation.navigate(SCREEN_NAMES.MATCHES);
-                        } catch (err) {
-                            setLoading(false);
-                            showAlert('Error', 'Failed to complete match.');
-                        }
-                    }
+            "confirm",
+            async () => {
+                setAlertConfig(prev => ({ ...prev, visible: false }));
+                try {
+                    setLoading(true);
+                    await cricketScoringService.updateMatchStatus(fixtureId, 'completed', winnerId);
+                    navigation.navigate(SCREEN_NAMES.HOME);
+                } catch (err) {
+                    setLoading(false);
+                    showAlert('Error', 'Failed to complete match.');
                 }
-            ]
+            },
+            true, // showCancel
+            "Complete" // confirmText
         );
     };
 
@@ -370,6 +369,9 @@ const PointsScoringScreen = () => {
                 message={alertConfig.message}
                 type={alertConfig.type}
                 onClose={() => setAlertConfig(prev => ({ ...prev, visible: false }))}
+                onConfirm={alertConfig.onConfirm}
+                showCancel={alertConfig.showCancel}
+                confirmText={alertConfig.confirmText}
             />
         </SafeAreaView>
     );
