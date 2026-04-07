@@ -92,12 +92,12 @@ const CreateTournamentScreen = ({ navigation }) => {
     const [formatPickerVisible, setFormatPickerVisible] = useState(false);
     const [sportsPickerVisible, setSportsPickerVisible] = useState(false);
 
-    const [typeSelectionVisible, setTypeSelectionVisible] = useState(true);
-
     useFocusEffect(
         useCallback(() => {
-            setTypeSelectionVisible(true);
-        }, [])
+            if (!sportsList || sportsList.length === 0) {
+                dispatch(fetchSports());
+            }
+        }, [sportsList])
     );
 
     React.useEffect(() => {
@@ -743,59 +743,6 @@ const CreateTournamentScreen = ({ navigation }) => {
                 buttonColor={COLORS.primary}
             />
 
-            {/* Selection Modal */}
-            <Modal
-                transparent
-                visible={typeSelectionVisible}
-                animationType="fade"
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.selectionModal}>
-                        <Text style={styles.selectionTitle}>Create Tournament</Text>
-                        <Text style={styles.selectionSubtitle}>What type of tournament do you want to create?</Text>
-
-                        <TouchableOpacity
-                            style={styles.selectionOption}
-                            onPress={() => setTypeSelectionVisible(false)}
-                        >
-                            <View style={[styles.selectionIcon, { backgroundColor: COLORS.primary + '15' }]}>
-                                <Trophy size={24} color={COLORS.primary} />
-                            </View>
-                            <View style={styles.selectionTextContainer}>
-                                <Text style={styles.selectionOptionTitle}>Physical Tournament</Text>
-                                <Text style={styles.selectionOptionDesc}>Cricket, Football, Badminton, etc.</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.selectionOption}
-                            onPress={() => {
-                                setTypeSelectionVisible(false);
-                                navigation.navigate(SCREEN_NAMES.CREATE_ESPORTS_TOURNAMENT);
-                            }}
-                        >
-                            <View style={[styles.selectionIcon, { backgroundColor: COLORS.secondary + '15' }]}>
-                                <Award size={24} color={COLORS.secondary} />
-                            </View>
-                            <View style={styles.selectionTextContainer}>
-                                <Text style={styles.selectionOptionTitle}>eSports Tournament</Text>
-                                <Text style={styles.selectionOptionDesc}>BGMI, Free Fire, Valorant, etc.</Text>
-                            </View>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            style={styles.cancelLink}
-                            onPress={() => {
-                                setTypeSelectionVisible(false);
-                                navigation.goBack();
-                            }}
-                        >
-                            <Text style={styles.cancelLinkText}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
-
             {/* Custom Alert */}
             <AppAlert
                 visible={alertConfig.visible}
@@ -1062,69 +1009,6 @@ const styles = StyleSheet.create({
         marginTop: 8,
         textAlign: 'center',
         lineHeight: 20,
-    },
-    selectionModal: {
-        width: '90%',
-        backgroundColor: COLORS.surface,
-        borderRadius: 24,
-        padding: 24,
-        alignSelf: 'center',
-        marginBottom: 'auto',
-        marginTop: 'auto',
-    },
-    selectionTitle: {
-        fontSize: 22,
-        fontWeight: '800',
-        color: COLORS.text,
-        textAlign: 'center',
-        marginBottom: 8,
-    },
-    selectionSubtitle: {
-        fontSize: 14,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        marginBottom: 24,
-    },
-    selectionOption: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: COLORS.gray50,
-        padding: 16,
-        borderRadius: 16,
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: COLORS.borderLight,
-    },
-    selectionIcon: {
-        width: 48,
-        height: 48,
-        borderRadius: 12,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
-    },
-    selectionTextContainer: {
-        flex: 1,
-    },
-    selectionOptionTitle: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: COLORS.text,
-    },
-    selectionOptionDesc: {
-        fontSize: 12,
-        color: COLORS.textSecondary,
-        marginTop: 2,
-    },
-    cancelLink: {
-        marginTop: 8,
-        paddingVertical: 12,
-        alignItems: 'center',
-    },
-    cancelLinkText: {
-        fontSize: 15,
-        color: COLORS.textTertiary,
-        fontWeight: '600',
     },
 });
 

@@ -198,39 +198,6 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
           )}
-
-          {/* ── eSports Tournaments ── */}
-          <View style={styles.sectionHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <View style={styles.eSportsBadge}>
-                <Award size={12} color={COLORS.white} />
-              </View>
-              <Text style={styles.sectionTitle}>eSports Tournaments</Text>
-            </View>
-          </View>
-
-          {eSportsLoading ? (
-            <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
-              <Text style={{ color: COLORS.textSecondary }}>Loading eSports events...</Text>
-            </View>
-          ) : eSportsTournaments && eSportsTournaments.length > 0 ? (
-            <FlatList
-              data={eSportsTournaments}
-              keyExtractor={item => item.id.toString()}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: SPACING['16'], gap: SPACING['16'], paddingBottom: SPACING['16'] }}
-              renderItem={({ item }) => <ESportsTournamentCard item={item} />}
-              snapToInterval={280 + SPACING['16']}
-              decelerationRate="fast"
-              snapToAlignment="start"
-            />
-          ) : (
-            <View style={{ height: 100, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
-              <Text style={{ color: COLORS.textSecondary, fontSize: 13, textAlign: 'center' }}>No eSports tournaments yet. Check back soon! 🎮</Text>
-            </View>
-          )}
-
         </ScrollView>
       </Animated.View>
     </SafeAreaView>

@@ -9,6 +9,7 @@ import {
   Platform,
   StyleSheet,
   Animated,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -23,6 +24,7 @@ import {
   AlertCircle,
   Zap,
 } from 'lucide-react-native';
+import AppLogo from '../../assets/bootsplash_logo.png'
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -83,9 +85,9 @@ const LoginScreen = ({ navigation }) => {
             {/* Logo */}
             <View style={styles.logoWrap}>
               <View style={styles.logoCircle}>
-                <Zap size={32} color={COLORS.white} fill={COLORS.white} />
+                <Image source={AppLogo} style={styles.logoImage} />
               </View>
-              <View style={styles.logoAccent} />
+              {/* <View style={styles.logoAccent} /> */}
             </View>
             <Text style={styles.brandName}>{STRINGS.APP_NAME}</Text>
             <Text style={styles.brandTagline}>Sports Tournament Platform</Text>
@@ -200,22 +202,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING['28'],
   },
+  logoImage: {
+    width: 160,
+    height: 100,
+  },
   logoWrap: {
     position: 'relative',
-    marginBottom: 12,
+    // marginBottom: 12,
   },
   logoCircle: {
     width: 68,
     height: 68,
     borderRadius: 20,
-    backgroundColor: COLORS.primary,
+    // backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 16,
-    elevation: 10,
+    // shadowColor: COLORS.primary,
+    // shadowOffset: { width: 0, height: 8 },
+    // shadowOpacity: 0.5,
+    // shadowRadius: 16,
+    // elevation: 10,
   },
   logoAccent: {
     position: 'absolute',

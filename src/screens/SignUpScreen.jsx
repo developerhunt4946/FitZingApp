@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Animated,
   Alert,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -27,6 +28,8 @@ import {
   Zap,
 } from 'lucide-react-native';
 import STRINGS from '../constants/strings';
+import AppLogo from '../../assets/bootsplash_logo.png'
+
 
 const SignUpScreen = ({ navigation }) => {
   const [form, setForm] = useState({
@@ -150,7 +153,7 @@ const SignUpScreen = ({ navigation }) => {
           <Animated.View style={[styles.header, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
             <View style={styles.logoRow}>
               <View style={styles.logoCircle}>
-                <Zap size={22} color={COLORS.white} fill={COLORS.white} />
+                <Image source={AppLogo} style={styles.logoImage} />
               </View>
               <Text style={styles.brandName}>{STRINGS.APP_NAME}</Text>
             </View>
@@ -363,14 +366,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    // backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    // shadowColor: COLORS.primary,
+    // shadowOffset: { width: 0, height: 4 },
+    // shadowOpacity: 0.4,
+    // shadowRadius: 8,
+    // elevation: 6,
   },
   brandName: {
     fontSize: 22,
@@ -388,7 +391,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textSecondary,
   },
-
+  logoImage: {
+    width: 90,
+    height: 50,
+  },
   // API Error
   errorBanner: {
     flexDirection: 'row',
