@@ -277,7 +277,7 @@ const CreateTournamentScreen = ({ navigation }) => {
         }
     };
 
-    const isSetBasedSport = ['volleyball', 'tennis', 'badminton'].some(sport => formData.sports.name?.toLowerCase().includes(sport));
+    const isSetBasedSport = ['volleyball', 'tennis', 'badminton', 'pickleball'].some(sport => formData.sports.name?.toLowerCase().includes(sport));
 
     const renderInput = (label, value, onChangeText, placeholder, icon, keyboardType = 'default', multiline = false, isPressable = false, onPress = null) => (
         <View style={styles.inputGroup}>

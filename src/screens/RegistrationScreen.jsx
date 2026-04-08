@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,6 +9,8 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
+    Modal,
+    ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -29,6 +31,9 @@ import { COLORS, SPACING, FONTS } from '../theme';
 import STRINGS from '../constants/strings';
 import { AppAlert, AppInput } from '../components';
 import SCREEN_NAMES from '../constants/screenNames';
+import RazorpayCheckout from 'react-native-razorpay';
+import axios from 'axios';
+import { registerTeam } from '../services/tournamentServices';
 
 const RegistrationScreen = ({ route }) => {
     const navigation = useNavigation();
@@ -38,6 +43,8 @@ const RegistrationScreen = ({ route }) => {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [teamName, setTeamName] = useState('');
     const [players, setPlayers] = useState([{ firstName: '', lastName: '', email: '', phone: '' }]);
+    const [loading, setLoading] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Custom Alert State
     const [alertConfig, setAlertConfig] = useState({
@@ -123,17 +130,116 @@ const RegistrationScreen = ({ route }) => {
         return true;
     };
 
-    const handlePayNow = () => {
-        if (validateForm()) {
-            navigation.navigate(SCREEN_NAMES.REGISTRATION_CONFIRMATION, {
-                tournamentId,
-                categoryId: selectedCategory,
-                categoryName: currentCategory.name,
-                teamName,
-                players,
-                total: calculateTotal.total,
-                breakup: calculateTotal
+    // Removed Cashfree callback setup
+
+    const handlePaymentVerify = async (paymentData) => {
+        try {
+            const payload = {
+                teamName: teamName.trim(),
+                players: players.map(p => ({
+                    firstName: p.firstName.trim(),
+                    lastName: p.lastName.trim(),
+                    email: p.email.trim(),
+                    phone: p.phone.trim()
+                }))
+            };
+
+            await registerTeam(tournamentId, selectedCategory, payload);
+            setLoading(false);
+            setShowSuccess(true);
+            setTimeout(() => {
+                setShowSuccess(false);
+                navigation.goBack();
+            }, 2200);
+        } catch (error) {
+            console.error('Verify error:', error);
+            setLoading(false);
+            showAlert('Registration Failed', 'Failed to register your team. If money was deducted, please contact support.', 'error');
+        }
+    };
+
+    const handlePayNow = async () => {
+        if (!validateForm()) return;
+        setLoading(true);
+
+        try {
+            if (calculateTotal.total === 0) {
+                const payload = {
+                    teamName: teamName.trim(),
+                    players: players.map(p => ({
+                        firstName: p.firstName.trim(),
+                        lastName: p.lastName.trim(),
+                        email: p.email.trim(),
+                        phone: p.phone.trim()
+                    }))
+                };
+
+                await registerTeam(tournamentId, selectedCategory, payload);
+                setLoading(false);
+                setShowSuccess(true);
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    navigation.goBack();
+                }, 2200);
+                return;
+            }
+
+            const orderPayload = {
+                amount: Math.round(calculateTotal.total * 100),
+                currency: "INR",
+                receipt: 'team_' + Date.now().toString(),
+                notes: {
+                    teamName: teamName.trim().substring(0, 50) || 'Team Captain'
+                }
+            };
+
+            const response = await axios.post('https://api.razorpay.com/v1/orders', orderPayload, {
+                auth: {
+                    username: 'rzp_test_SasJX1dbFLrLQZ',
+                    password: 'nfQJYmA5mT7sfB7QQzm8mMPW'
+                }
             });
+
+            const orderId = response?.data?.id;
+
+            if (!orderId) {
+                throw new Error('Invalid response from payment server (missing order ID).');
+            }
+
+            try {
+                var options = {
+                    description: `Registration for ${currentCategory?.name || 'Tournament'}`.substring(0, 50),
+                    image: 'https://fitzing.in/logo.png',
+                    currency: 'INR',
+                    key: 'rzp_test_SasJX1dbFLrLQZ',
+                    amount: Math.round(calculateTotal.total * 100).toString(),
+                    name: 'FitZing',
+                    order_id: orderId,
+                    prefill: {
+                        email: players[0].email.trim() || 'athlete@fitzing.in',
+                        contact: players[0].phone.trim() || '9876543210',
+                        name: teamName.trim().substring(0, 50) || 'Team Captain'
+                    },
+                    theme: {color: COLORS.primary}
+                };
+
+                RazorpayCheckout.open(options).then((data) => {
+                    handlePaymentVerify(data);
+                }).catch((error) => {
+                    setLoading(false);
+                    showAlert('Payment Failed', error?.description || 'Transaction failed or was cancelled.', 'error');
+                });
+            } catch (sdkError) {
+                setLoading(false);
+                showAlert('Payment Error', 'Failed to initialize payment gateway window.', 'error');
+                console.error(sdkError);
+            }
+
+        } catch (error) {
+            setLoading(false);
+            const errorMessage = error.response?.data?.message || error.message || 'Failed to create payment order.';
+            showAlert('Order Failed', errorMessage, 'error');
+            console.error('createOrder error:', error);
         }
     };
 
@@ -322,17 +428,40 @@ const RegistrationScreen = ({ route }) => {
                 </ScrollView>
             </KeyboardAvoidingView>
 
-            {/* Bottom Actions */}
             <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING['16'] }]}>
                 <TouchableOpacity
-                    style={[styles.payBtn, !selectedCategory && styles.disabledBtn]}
+                    style={[styles.payBtn, (!selectedCategory || loading) && styles.disabledBtn]}
                     onPress={handlePayNow}
-                    disabled={!selectedCategory}
+                    disabled={!selectedCategory || loading}
                     activeOpacity={0.8}
                 >
-                    <Text style={styles.payBtnText}>Pay Now ₹{(Number(calculateTotal?.total) || 0).toFixed(2)}</Text>
+                    {loading ? (
+                        <ActivityIndicator color={COLORS.white} />
+                    ) : (
+                        <Text style={styles.payBtnText}>Pay Now ₹{(Number(calculateTotal?.total) || 0).toFixed(2)}</Text>
+                    )}
                 </TouchableOpacity>
             </View>
+
+            {/* Success Modal */}
+            <Modal
+                transparent
+                visible={showSuccess}
+                animationType="fade"
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.successBox}>
+                        <View style={{ backgroundColor: COLORS.success + '15', padding: 20, borderRadius: 50 }}>
+                            <CheckCircle2 size={60} color={COLORS.success} />
+                        </View>
+                        <Text style={styles.successTitle}>Registration Successful!</Text>
+                        <Text style={styles.successSub}>
+                            Your team {teamName} has been successfully registered. Good luck for the tournament!
+                        </Text>
+                        <ActivityIndicator color={COLORS.success} style={{ marginTop: 24 }} />
+                    </View>
+                </View>
+            </Modal>
 
             {/* Custom Alert */}
             <AppAlert
@@ -610,6 +739,27 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: '800',
         letterSpacing: 0.5,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    successBox: {
+        width: '82%',
+        backgroundColor: COLORS.surface,
+        borderRadius: 24,
+        padding: 32,
+        alignItems: 'center',
+    },
+    successTitle: { fontSize: 22, fontWeight: '900', color: COLORS.text, marginTop: 16 },
+    successSub: {
+        fontSize: 14,
+        color: COLORS.textSecondary,
+        marginTop: 10,
+        textAlign: 'center',
+        lineHeight: 20,
     },
 });
 

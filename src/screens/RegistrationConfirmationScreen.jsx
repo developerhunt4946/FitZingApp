@@ -16,6 +16,8 @@ import { ChevronLeft, CheckCircle2, Circle, CreditCard, Info, AlertCircle } from
 import { COLORS, SPACING, FONTS } from '../theme';
 import SCREEN_NAMES from '../constants/screenNames';
 import { registerTeam } from '../redux/slices/tournamentSlice';
+import RazorpayCheckout from 'react-native-razorpay';
+import axios from 'axios';
 
 const RegistrationConfirmationScreen = ({ route }) => {
     const navigation = useNavigation();
@@ -28,26 +30,93 @@ const RegistrationConfirmationScreen = ({ route }) => {
     const [error, setError] = useState(null);
 
     const handleRegister = async () => {
-        if (registrationMethod !== 'offline') return;
-
         setLoading(true);
         setError(null);
 
-        try {
-            const result = await dispatch(registerTeam({
-                tournamentId,
-                categoryId,
-                registrationData: {
-                    name: teamName,
-                    players: players
-                }
-            })).unwrap();
+        if (registrationMethod === 'offline') {
+            try {
+                const result = await dispatch(registerTeam({
+                    tournamentId,
+                    categoryId,
+                    registrationData: {
+                        name: teamName,
+                        players: players
+                    }
+                })).unwrap();
 
-            setShowSuccess(true);
-        } catch (err) {
-            setError(err || 'Registration failed. Please try again.');
-        } finally {
-            setLoading(false);
+                setShowSuccess(true);
+            } catch (err) {
+                setError(err || 'Registration failed. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        } else if (registrationMethod === 'online') {
+            try {
+                const orderPayload = {
+                    amount: Math.round(Number(total) * 100),
+                    currency: "INR",
+                    receipt: 'online_team_' + Date.now().toString(),
+                    notes: {
+                        teamName: teamName?.substring(0, 50) || 'Team Captain'
+                    }
+                };
+
+                const response = await axios.post('https://api.razorpay.com/v1/orders', orderPayload, {
+                    auth: {
+                        username: 'rzp_test_SasJX1dbFLrLQZ',
+                        password: 'nfQJYmA5mT7sfB7QQzm8mMPW'
+                    }
+                });
+
+                const orderId = response?.data?.id;
+
+                if (!orderId) {
+                    throw new Error('Invalid response from payment server (missing order ID).');
+                }
+
+                var options = {
+                    description: `Registration for ${categoryName || 'Tournament'}`.substring(0, 50),
+                    image: 'https://fitzing.in/logo.png',
+                    currency: 'INR',
+                    key: 'rzp_test_SasJX1dbFLrLQZ',
+                    amount: Math.round(Number(total) * 100).toString(),
+                    name: 'FitZing',
+                    order_id: orderId,
+                    prefill: {
+                        email: players && players[0]?.email ? players[0].email : 'athlete@fitzing.in',
+                        contact: players && players[0]?.phone ? players[0].phone : '9876543210',
+                        name: teamName?.substring(0, 50) || 'Team Captain'
+                    },
+                    theme: {color: COLORS.primary}
+                };
+
+                RazorpayCheckout.open(options).then(async (data) => {
+                    // Success, register team
+                    try {
+                        await dispatch(registerTeam({
+                            tournamentId,
+                            categoryId,
+                            registrationData: {
+                                name: teamName,
+                                players: players
+                            }
+                        })).unwrap();
+                        setShowSuccess(true);
+                    } catch (err) {
+                        setError(err || 'Payment succeeded but registration failed. Please contact support.');
+                    } finally {
+                        setLoading(false);
+                    }
+                }).catch((error) => {
+                    setLoading(false);
+                    setError(error?.description || 'Transaction failed or was cancelled.');
+                });
+
+            } catch (error) {
+                setLoading(false);
+                setError(error.message || 'Failed to initialize payment gateway window.');
+                console.error(error);
+            }
         }
     };
 
@@ -127,13 +196,20 @@ const RegistrationConfirmationScreen = ({ route }) => {
                         )}
                     </TouchableOpacity>
 
-                    <View style={[styles.optionCard, styles.optionCardDisabled]}>
+                    <TouchableOpacity
+                        style={[styles.optionCard, registrationMethod === 'online' && styles.optionCardActive]}
+                        onPress={() => setRegistrationMethod('online')}
+                    >
                         <View style={styles.optionInfo}>
-                            <Text style={[styles.optionTitle, { color: COLORS.gray400 }]}>Pay Online (coming soon)</Text>
+                            <Text style={styles.optionTitle}>Pay Online</Text>
                             <Text style={styles.optionDesc}>Pay securely using UPI, Card or Netbanking.</Text>
                         </View>
-                        <Circle size={22} color={COLORS.gray200} />
-                    </View>
+                        {registrationMethod === 'online' ? (
+                            <CheckCircle2 size={22} color={COLORS.primary} />
+                        ) : (
+                            <Circle size={22} color={COLORS.gray300} />
+                        )}
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
 

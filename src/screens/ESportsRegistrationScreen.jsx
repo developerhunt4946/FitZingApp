@@ -29,13 +29,8 @@ import { useNavigation } from '@react-navigation/native';
 import { registerESportsTeam } from '../services/tournamentServices';
 import { createPaymentOrder, verifyPayment } from '../services/paymentServices';
 import { AppAlert } from '../components';
-import {
-  CFEnvironment,
-  CFSession,
-  CFThemeBuilder,
-  CFDropCheckoutPayment,
-  CFPaymentGatewayService,
-} from 'react-native-cashfree-pg-sdk';
+import RazorpayCheckout from 'react-native-razorpay';
+import axios from 'axios';
 
 // Determine which Game ID label to use based on category
 const getGameIdLabel = (categoryName) => {
@@ -142,56 +137,33 @@ const ESportsRegistrationScreen = ({ route }) => {
         return true;
     };
 
-    useEffect(() => {
-        CFPaymentGatewayService.setCallback({
-            onVerify(orderID) {
-                console.log('payment verified callback', orderID);
-                handlePaymentVerify(orderID);
-            },
-            onError(error, orderID) {
-                console.log('payment error callback', error, orderID);
-                setLoading(false);
-                showAlert('Payment Failed', error?.message || 'Transaction failed or was cancelled.', 'error');
-            },
-        });
+    // Removed Cashfree callback setup
 
-        return () => {
-            CFPaymentGatewayService.removeCallback();
-        };
-    }, []);
-
-    const handlePaymentVerify = async (orderId) => {
+    const handlePaymentVerify = async (paymentData) => {
         try {
-            const verifyRes = await verifyPayment(orderId);
-            // Cashfree backend returns paymentStatus as 'SUCCESS' generally
-            if (verifyRes?.paymentStatus === 'SUCCESS' || verifyRes?.payment_status === 'SUCCESS' || verifyRes?.status === 'SUCCESS') {
-                // Proceed with eSports Team registration
-                const payload = {
-                    tournamentId: tournament._id,
-                    teamName: teamName.trim(),
-                    whatsappNumber: whatsapp.trim(),
-                    players: players.map(p => ({
-                        name: p.name.trim(),
-                        gameId: p.gameId.trim()
-                    }))
-                };
+            // Proceed with eSports Team registration
+            const payload = {
+                tournamentId: tournament._id,
+                teamName: teamName.trim(),
+                whatsappNumber: whatsapp.trim(),
+                players: players.map(p => ({
+                    name: p.name.trim(),
+                    gameId: p.gameId.trim()
+                }))
+            };
 
-                await registerESportsTeam(payload);
-                setLoading(false);
-                setShowSuccess(true);
-                setTimeout(() => {
-                    setShowSuccess(false);
-                    navigation.goBack();
-                    navigation.goBack();
-                }, 2200);
-            } else {
-                setLoading(false);
-                showAlert('Payment Pending/Failed', 'Your payment was not successful. Please try again.', 'error');
-            }
+            await registerESportsTeam(payload);
+            setLoading(false);
+            setShowSuccess(true);
+            setTimeout(() => {
+                setShowSuccess(false);
+                navigation.goBack();
+                navigation.goBack();
+            }, 2200);
         } catch (error) {
             console.error('Verify error:', error);
             setLoading(false);
-            showAlert('Verification Failed', 'Failed to verify payment status. If money was deducted, please contact support.', 'error');
+            showAlert('Registration Failed', 'Failed to register your team. If money was deducted, please contact support.', 'error');
         }
     };
 
@@ -224,39 +196,52 @@ const ESportsRegistrationScreen = ({ route }) => {
                 return;
             }
 
-            // 1. Create order
+            // Generate order using Razorpay API
             const orderPayload = {
-                orderAmount: discountedFee,
-                customerId: 'esports_' + Date.now().toString(),
-                customerName: teamName.trim().substring(0, 50) || 'Team Captain',
-                customerPhone: whatsapp.trim(),
-                customerEmail: 'esports@fitzing.in',
-                orderNote: `ESports Registration for ${tournament?.name || 'Tournament'}`.substring(0, 50)
+                amount: Math.round(discountedFee * 100), // amount in paise
+                currency: "INR",
+                receipt: 'esports_' + Date.now().toString(),
+                notes: {
+                    teamName: teamName.trim().substring(0, 50) || 'Team Captain'
+                }
             };
 
-            const orderResponse = await createPaymentOrder(orderPayload);
-            const paymentSessionId = orderResponse?.payment_session_id || orderResponse?.data?.payment_session_id || orderResponse?.session_id;
-            const orderId = orderResponse?.order_id || orderResponse?.data?.order_id || orderResponse?.orderId;
-            
-            if (!paymentSessionId || !orderId) {
-                throw new Error('Invalid response from payment server (missing session ID).');
+            const response = await axios.post('https://api.razorpay.com/v1/orders', orderPayload, {
+                auth: {
+                    username: 'rzp_test_SasJX1dbFLrLQZ',
+                    password: 'nfQJYmA5mT7sfB7QQzm8mMPW'
+                }
+            });
+
+            const orderId = response?.data?.id;
+
+            if (!orderId) {
+                throw new Error('Invalid response from payment server (missing order ID).');
             }
 
-            // 2. Open Cashfree session
             try {
-                const session = new CFSession(paymentSessionId, orderId, CFEnvironment.SANDBOX);
-                const theme = new CFThemeBuilder()
-                    .setNavigationBarBackgroundColor(COLORS.primary)
-                    .setNavigationBarTextColor('#ffffff')
-                    .setButtonBackgroundColor(COLORS.primary)
-                    .setButtonTextColor('#ffffff')
-                    .setPrimaryTextColor(COLORS.text)
-                    .setSecondaryTextColor(COLORS.textSecondary)
-                    .build();
+                var options = {
+                    description: `ESports Registration for ${tournament?.name || 'Tournament'}`.substring(0, 50),
+                    image: 'https://fitzing.in/logo.png',
+                    currency: 'INR',
+                    key: 'rzp_test_SasJX1dbFLrLQZ', // Your api key
+                    amount: Math.round(discountedFee * 100).toString(),
+                    name: 'FitZing',
+                    order_id: orderId,
+                    prefill: {
+                        email: 'esports@fitzing.in',
+                        contact: whatsapp.trim() || '9876543210',
+                        name: teamName.trim().substring(0, 50) || 'Team Captain'
+                    },
+                    theme: {color: COLORS.primary}
+                };
 
-                const dropPayment = new CFDropCheckoutPayment(session, null, theme);
-                CFPaymentGatewayService.doPayment(dropPayment);
-                // Keep loading state true while Webview is opening. The SDK callbacks will handle success/failure.
+                RazorpayCheckout.open(options).then((data) => {
+                    handlePaymentVerify(data);
+                }).catch((error) => {
+                    setLoading(false);
+                    showAlert('Payment Failed', error?.description || 'Transaction failed or was cancelled.', 'error');
+                });
             } catch (sdkError) {
                 setLoading(false);
                 showAlert('Payment Error', 'Failed to initialize payment gateway window.', 'error');
